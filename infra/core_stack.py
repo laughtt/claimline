@@ -103,6 +103,7 @@ class CoreStack(Stack):
                 "SEND_FUNCTION": self.send_fn.function_name,
                 "WABA_PHONE_NUMBER_ID": waba_phone_number_id,
                 "AGENT_RUNTIME_ARN": self.agent.runtime.agent_runtime_arn,
+                "AGENT_RUNTIME_VERSION": self.agent.runtime.agent_runtime_version,
             },
             dlq=dlq,
             # The agent takes a few seconds per turn, more with tools

@@ -23,6 +23,7 @@ MESSAGES_TABLE = os.environ["MESSAGES_TABLE"]
 SEND_FUNCTION = os.environ["SEND_FUNCTION"]
 PHONE_NUMBER_ID = os.environ["WABA_PHONE_NUMBER_ID"]
 AGENT_RUNTIME_ARN = os.environ.get("AGENT_RUNTIME_ARN", "")
+AGENT_RUNTIME_VERSION = os.environ.get("AGENT_RUNTIME_VERSION", "")
 
 MEDIA_TYPES = ("image", "audio", "video", "document", "sticker")
 DEDUPE_TTL_SECONDS = 7 * 24 * 3600
@@ -89,8 +90,9 @@ def reply_from_agent(msg, media_key):
     try:
         resp = agentcore.invoke_agent_runtime(
             agentRuntimeArn=AGENT_RUNTIME_ARN,
-            # At least 33 characters; one runtime session per phone
-            runtimeSessionId="wa-" + hashlib.sha256(phone.encode()).hexdigest(),
+            # At least 33 characters; one runtime session per phone and agent
+            # version, so a deploy takes effect without waiting for idle sessions
+            runtimeSessionId=f"wa-v{AGENT_RUNTIME_VERSION}-" + hashlib.sha256(phone.encode()).hexdigest(),
             payload=json.dumps(payload).encode("utf-8"),
         )
         text = json.loads(resp["response"].read())["reply"]

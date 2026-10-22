@@ -49,8 +49,20 @@ def invoke(payload, context):
         session_manager=session_manager,
         callback_handler=None,
     )
+    drop_reasoning(agent.messages)
     result = agent(describe(payload))
     return {"reply": str(result).strip(), "caseId": party.case_id, "role": party.role, "event": event}
+
+
+def drop_reasoning(messages) -> None:
+    """Strip thinking blocks from history restored out of Memory.
+
+    Their signatures are bound to the request that produced them, and the
+    system prompt changes between turns, so Bedrock rejects them on replay.
+    """
+    for message in messages:
+        message["content"] = [block for block in message["content"] if "reasoningContent" not in block]
+    messages[:] = [message for message in messages if message["content"]]
 
 
 def describe(payload) -> str:
