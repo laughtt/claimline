@@ -1,0 +1,338 @@
+<title>Claimline Build Spec</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: single reading column with a sticky section index on wide screens; Vehicle A blue / Vehicle B yellow taken from the European Accident Statement form */
+:root{
+  --bg:#f6f7f9; --paper:#ffffff; --ink:#15202b; --muted:#566373; --line:#d9dee5;
+  --a:#1f4fa3; --a-soft:#e6eefb; --b:#b88a00; --b-soft:#fdf4d6; --cat:#c2410c; --cat-soft:#fdece3;
+  --ok:#17803d; --ok-soft:#e5f5ea; --code:#eef1f5;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --paper:#161d25; --ink:#e4e9ef; --muted:#97a3b2; --line:#2a3440;
+  --a:#7aa5f0; --a-soft:#1b2a44; --b:#e8c252; --b-soft:#3a3115; --cat:#f08a5d; --cat-soft:#3b2116;
+  --ok:#5ccf86; --ok-soft:#143222; --code:#1d2631; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --paper:#161d25; --ink:#e4e9ef; --muted:#97a3b2; --line:#2a3440;
+  --a:#7aa5f0; --a-soft:#1b2a44; --b:#e8c252; --b-soft:#3a3115; --cat:#f08a5d; --cat-soft:#3b2116;
+  --ok:#5ccf86; --ok-soft:#143222; --code:#1d2631; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--f-body)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}nav.toc{display:none}}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 0}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--a)}
+main{min-width:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(34px,5vw,52px);font-weight:800;margin:0 0 8px;letter-spacing:-.01em}
+h2{font-size:28px;font-weight:700;margin:56px 0 12px;padding-top:16px;border-top:2px solid var(--ink)}
+h3{font-size:19px;font-weight:700;margin:28px 0 8px}
+p,li{max-width:72ch}
+.eyebrow{font:600 12px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:19px;color:var(--muted);max-width:66ch}
+code,pre{font-family:var(--f-mono);font-size:13px}
+code{background:var(--code);padding:1px 5px;border-radius:4px}
+pre{background:var(--code);padding:14px 16px;border-radius:6px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0}
+.tbl{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.03em;background:var(--code)}
+td{font-variant-numeric:tabular-nums}
+tr.today td{background:var(--a-soft)}
+.pill{display:inline-block;font:600 11px/1 var(--f-mono);padding:4px 7px;border-radius:999px;letter-spacing:.04em;white-space:nowrap}
+.p-a{background:var(--a-soft);color:var(--a)} .p-b{background:var(--b-soft);color:var(--b)} .p-cat{background:var(--cat-soft);color:var(--cat)} .p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-chk{background:var(--cat-soft);color:var(--cat)}
+.modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:24px 0}
+.mod{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px;min-width:0}
+.mod.a{border-top:5px solid var(--a)} .mod.cat{border-top:5px solid var(--cat)}
+.mod h3{margin-top:4px}
+.steps{list-style:none;padding:0;margin:12px 0;display:grid;gap:10px;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px}
+.steps li::before{content:counter(s);font:700 14px/32px var(--f-display);text-align:center;width:32px;height:32px;border-radius:50%;background:var(--code)}
+.note{background:var(--paper);border-left:4px solid var(--b);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0}
+.note.risk{border-left-color:var(--cat)}
+.legend{font-size:13px;color:var(--muted)}
+.check{list-style:none;padding:0}
+.check li{padding-left:28px;position:relative;margin:6px 0}
+.check li::before{content:"";position:absolute;left:0;top:5px;width:14px;height:14px;border:2px solid var(--muted);border-radius:3px}
+.mermaid{background:var(--paper);border:1px solid var(--line);border-radius:6px}
+a{color:var(--a)}
+:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <div class="eyebrow" style="margin-bottom:10px">Sections</div>
+  <a href="#overview">1 · Overview</a>
+  <a href="#scoring">2 · How it scores</a>
+  <a href="#bothsides">3 · BothSides flow</a>
+  <a href="#firstcall">4 · First Call flow</a>
+  <a href="#insurer">5 · Insurer features</a>
+  <a href="#arch">6 · Architecture</a>
+  <a href="#apis">7 · Services and APIs</a>
+  <a href="#data">8 · Data model</a>
+  <a href="#agent">9 · Agent design</a>
+  <a href="#cat">10 · Catastrophe data</a>
+  <a href="#repo">11 · Repo and deploy</a>
+  <a href="#demo">12 · Demo and proof</a>
+  <a href="#plan">13 · 11-day plan</a>
+  <a href="#risks">14 · Risks</a>
+  <a href="#submit">15 · Submission</a>
+</nav>
+
+<main>
+<div class="eyebrow">AWS CDS Agentic AI Partner Hackathon · submit Tue Oct 27, 2026</div>
+<h1>Claimline</h1>
+<p class="lede">One messaging core for insurers, two products. BothSides turns a car crash into a neutral joint report that both drivers approve. First Call reaches every policyholder in a disaster zone, opens their claims and tells adjusters who to help first. Everything runs over WhatsApp, RCS, SMS and email, with no app to install.</p>
+<p class="legend">Revised Mon Oct 19, 2026: plan weekdays corrected to the 2026 calendar; the photo-and-video weekend is now only Sun Oct 25.</p>
+
+<h2 id="overview">1 · Overview</h2>
+<div class="modules">
+  <div class="mod a">
+    <span class="pill p-a">Module A · car claims</span>
+    <h3>BothSides</h3>
+    <p>Both drivers scan one QR code and tell their side in their own language: text, voice notes, photos, licence and policy. The agent reconciles the two versions into agreed facts, facts only one driver gave, and conflicts. It asks follow-up questions only about the conflicts. Both drivers approve the draft, and the same file goes to both insurers.</p>
+    <p><b>Target prize:</b> Best WhatsApp ($10K), then 1st place.</p>
+  </div>
+  <div class="mod cat">
+    <span class="pill p-cat">Module B · natural catastrophes</span>
+    <h3>First Call</h3>
+    <p>A hurricane, earthquake, flood or wildfire alert hits a region. The insurer messages every opted-in policyholder inside the hazard zone with SAFE / DAMAGE / NEED HELP. The agent reads the replies, opens a first notice of loss, triages photo damage and chases people who don't answer. Adjusters get a ranked worklist by email.</p>
+    <p><b>Target prize:</b> 1st, 2nd or 3rd place (RCS-first).</p>
+  </div>
+</div>
+<p><b>Packaging.</b> We build one codebase and submit two Devpost entries, each with its own ACE opportunity. A project can win only one prize, and the two entries go after different prize pools. Before submitting, ask on Discord whether two entries that share a core count as "substantially different". If the answer is no, submit one entry: BothSides as the main flow, with First Call as one 25-second scene at the end of the video.</p>
+<p><b>Order of work:</b> BothSides first. First Call starts only once BothSides runs end to end, by Wed Oct 21 at the latest. If BothSides isn't done by then, ship BothSides alone.</p>
+
+<h2 id="scoring">2 · How it scores</h2>
+<p>Past AWS winners (the AWS AI Agent Global Hackathon 2025 and Agents for Humans 2026) were known problems built end to end: real channels, a replayed event with measured numbers, and a clear handoff to a human. Originality pays only when it fits in one sentence. Ours: "two versions of one crash, reconciled", and "the insurer calls you before you call them".</p>
+<div class="tbl"><table>
+<tr><th>Criterion</th><th>Weight</th><th>What we put in front of the judges</th></tr>
+<tr><td>Technical Execution</td><td>40%</td><td>WhatsApp (EUM Social) + RCS/SMS (EUM SMS) + SES two-way, all live, wired to AgentCore Runtime + Memory, Bedrock vision, Transcribe and Guardrails. One-command <code>cdk deploy</code>.</td></tr>
+<tr><td>Value / Impact (first tie-breaker)</td><td>20%</td><td>Measured numbers: minutes to a signed joint report, conflicts caught vs ground truth, % of a disaster zone reached in the first hour.</td></tr>
+<tr><td>Demo</td><td>20%</td><td>Split screen: two phones plus the adjuster's inbox. The reconciliation table appears within the first 20 seconds.</td></tr>
+<tr><td>Creativity</td><td>10%</td><td>Two parties in one case, one of them not a customer. Dynamic WhatsApp Flows for the approval step. Proactive outreach in a catastrophe.</td></tr>
+<tr><td>Functionality</td><td>10%</td><td>Serverless, idempotent, DLQs, and a judge test path that needs no RCS tester invite.</td></tr>
+</table></div>
+
+<h2 id="bothsides">3 · BothSides: the car-crash flow</h2>
+<ol class="steps">
+  <li><div><b>Driver A reports.</b> Driver A messages the insurer's WhatsApp number, or scans the QR code on the policy card. The agent asks about injuries first. If anyone is hurt, it shows the emergency number and pauses the intake. Next it gets the location (a WhatsApp location pin), the time and photos.</div></li>
+  <li><div><b>Driver B joins.</b> The agent shows driver A a QR code and a link (<code>wa.me/&lt;number&gt;?text=JOIN%20&lt;caseCode&gt;</code>) to show the other driver. Driver B scans it and taps send. Because driver B started the conversation, it counts as user-initiated: no template is needed and no phone numbers are swapped. Driver B doesn't need to be a customer. If driver B has no WhatsApp, a short link starts the same intake over RCS, falling back to SMS.</div></li>
+  <li><div><b>Each side tells their story.</b> Each driver uses their own language: text, voice notes, photos of damage and the scene, their licence and their policy card. The agent extracts structured facts from each piece of evidence and links every fact to the evidence it came from.</div></li>
+  <li><div><b>Reconcile.</b> The agent compares the two fact sets and sorts each fact as <span class="pill p-ok">AGREED</span>, <span class="pill p-a">ONLY A</span> / <span class="pill p-b">ONLY B</span>, or <span class="pill p-cat">CONFLICT</span>. It asks each driver about each conflict once, in neutral wording ("Driver B remembers the light as red. What do you remember?"). It never assigns fault.</div></li>
+  <li><div><b>Both approve.</b> Each driver gets the draft in their own language in a WhatsApp Flow: review the facts, add a comment, approve. A driver can add their own version, but cannot change the other driver's statements. Remaining conflicts stay marked as disputed.</div></li>
+  <li><div><b>File to both insurers.</b> SES sends the joint report (PDF + JSON + photos) to both insurers' claims inboxes. Each driver gets a copy. When an adjuster replies by email, SES inbound routes the reply back to that adjuster's own customer on WhatsApp.</div></li>
+</ol>
+<div class="note"><b>Why driver B takes part.</b> The report is neutral, like the European Accident Statement: it belongs to both drivers, both insurers get the same file, and each driver approves it before it is sent. Driver B gets the other driver's verified details and their own copy, and avoids weeks of phone tag. This is the first question an insurance judge will ask, so the answer goes on its own slide.</div>
+
+<h2 id="firstcall">4 · First Call: the natural-catastrophe flow</h2>
+<ol class="steps">
+  <li><div><b>Trigger.</b> A poller reads official feeds every 5 minutes: NWS CAP alerts (US), the NHC hurricane forecast cone, USGS earthquakes M≥6 with ShakeMap, and GDACS (global, including Mexico). An operator can also draw a zone on the console by hand. Every event becomes a hazard polygon.</div></li>
+  <li><div><b>Find the people.</b> A point-in-polygon check over the insured risk addresses produces the outreach list. It is ordered by risk: vulnerable flag, then distance to the event centre, then type of policy.</div></li>
+  <li><div><b>Reach them.</b> In RCS markets, a rich card with SAFE / DAMAGE / NEED HELP buttons, falling back to SMS. Where WhatsApp is primary (Mexico, LatAm), an approved WhatsApp template with the same three quick replies. Messages go out at a controlled rate that stays within each channel's throughput limit.</div></li>
+  <li><div><b>Understand the replies.</b> The agent turns free text and voice notes into structured needs. "Safe, but the roof is gone and the kids are with me" becomes <code>safe=true, damage=roof, dependants=2, shelter_need=possible</code>. DAMAGE opens a first notice of loss on the spot and asks for 3 photos. Bedrock vision triages severity from 1 to 4 and checks the photo's EXIF time and place.</div></li>
+  <li><div><b>Chase silence.</b> No reply in 30 minutes → the other channel. After 2 hours → email. After 6 hours → the policyholder goes on a named agent's call list. The ladder stops as soon as anyone replies on any channel.</div></li>
+  <li><div><b>Adjuster worklist.</b> Every 15 minutes, SES sends each adjuster team a ranked batch: NEED HELP first, then severity 4, then everyone else. When an adjuster replies "ASSIGN 12 34" or "CALLED 12", the case updates and the policyholder is told what happens next.</div></li>
+</ol>
+
+<h2 id="insurer">5 · Features insurers buy</h2>
+<div class="tbl"><table>
+<tr><th>Feature</th><th>Module</th><th>What it does</th></tr>
+<tr><td>Neutral joint report</td><td><span class="pill p-a">A</span></td><td>Both versions side by side with sources, conflict list and approvals from both drivers. One PDF, plus JSON ready to map to the claim system.</td></tr>
+<tr><td>FNOL in minutes</td><td><span class="pill p-a">A</span> <span class="pill p-cat">B</span></td><td>Policy number, insured, vehicle or property, time and place, injuries, damage photos and third party, captured in the first conversation.</td></tr>
+<tr><td>Coverage pre-check</td><td><span class="pill p-a">A</span> <span class="pill p-cat">B</span></td><td>Looks up the policy in a mock policy table (status, cover types, deductible) and flags "policy lapsed" or "no flood cover" for the adjuster. It never tells the customer they are or aren't covered.</td></tr>
+<tr><td>Fraud signals</td><td><span class="pill p-a">A</span> <span class="pill p-cat">B</span></td><td>Photo EXIF time or GPS that doesn't match the claimed event, the same photo reused across claims (perceptual hash), and an address outside the hazard polygon. These are flags for a human, never decisions.</td></tr>
+<tr><td>Damage triage</td><td><span class="pill p-cat">B</span></td><td>Severity 1–4 per photo, with a one-line reason, used to order adjuster work in a surge.</td></tr>
+<tr><td>Live roll</td><td><span class="pill p-cat">B</span></td><td>Reached / safe / damage / need help / silent, per zone, emailed every 15 minutes, plus a one-page CloudWatch dashboard.</td></tr>
+<tr><td>Language</td><td><span class="pill p-a">A</span> <span class="pill p-cat">B</span></td><td>Each person writes in their own language. The adjuster always gets English plus the original text.</td></tr>
+<tr><td>Audit trail</td><td><span class="pill p-a">A</span> <span class="pill p-cat">B</span></td><td>Every message, model call and approval is kept with timestamps in S3, for regulators and complaints.</td></tr>
+</table></div>
+
+<h2 id="arch">6 · Architecture</h2>
+<pre class="mermaid">
+flowchart LR
+  subgraph Channels
+    WA[WhatsApp<br/>EUM Social]
+    RCS[RCS / SMS<br/>EUM SMS]
+    EM[Email<br/>SES]
+  end
+  WA -- inbound events --> SNS[(SNS topics)]
+  RCS -- inbound + postbacks --> SNS
+  EM -- receipt rule --> S3IN[(S3 inbound mail)] --> SNS
+  SNS --> RT[Router Lambda<br/>dedupe · case lookup · media to S3]
+  RT --> AG[AgentCore Runtime<br/>Strands agent · Claude on Bedrock]
+  AG <--> MEM[AgentCore Memory<br/>per person + per case]
+  AG --> TOOLS[Tools: cases, policies, reconcile,<br/>vision triage, transcribe, send]
+  TOOLS <--> DDB[(DynamoDB)]
+  TOOLS --> TR[Transcribe]
+  TOOLS --> GR[Bedrock Guardrails]
+  TOOLS --> SEND[Send Lambda<br/>channel router + fallback]
+  SEND --> WA & RCS & EM
+  subgraph Catastrophe
+    EB[EventBridge 5 min] --> POLL[Feed poller<br/>NWS · NHC · USGS · GDACS]
+    POLL --> SF[Step Functions<br/>zone → list → outreach → chase]
+  end
+  SF --> SEND
+  SF --> DDB
+</pre>
+<p class="legend">The router keeps no state: case state lives in DynamoDB, conversation history in AgentCore Memory. Every outbound message goes through one Send Lambda, which chooses the channel, applies fallback and logs delivery.</p>
+
+<h2 id="apis">7 · Services and APIs</h2>
+<p><span class="pill p-chk">CONFIRM</span> marks names to check against the current boto3 docs. These services shipped features in 2025–2026 and their names can still change.</p>
+<div class="tbl"><table>
+<tr><th>Need</th><th>Service · boto3 client</th><th>Operations</th><th>Notes</th></tr>
+<tr><td>Send WhatsApp</td><td>EUM Social · <code>socialmessaging</code></td><td><code>send_whatsapp_message</code></td><td>The body is a Meta Cloud API message JSON passed as bytes, plus <code>metaApiVersion</code>. Interactive buttons, lists, Flows and templates all use this call.</td></tr>
+<tr><td>WhatsApp media</td><td><code>socialmessaging</code></td><td><code>get_whatsapp_message_media</code>, <code>post_whatsapp_message_media</code></td><td>Inbound media is copied straight to S3. Voice notes arrive as OGG/Opus.</td></tr>
+<tr><td>WhatsApp templates</td><td><code>socialmessaging</code></td><td>Template create/list operations <span class="pill p-chk">CONFIRM</span></td><td>Needed for First Call, which messages people first and so falls outside the 24-hour window. Submit the templates on day 1.</td></tr>
+<tr><td>WhatsApp Flows</td><td>Meta Flows, sent via <code>send_whatsapp_message</code></td><td>Flow JSON published in Meta. Dynamic Flows need an encrypted data-exchange endpoint (API Gateway + Lambda). <span class="pill p-chk">CONFIRM</span></td><td>Start with a static Flow that shows the draft passed in as data. Make it dynamic only if time allows.</td></tr>
+<tr><td>Inbound WhatsApp</td><td>EUM Social → SNS</td><td>WABA event destination = SNS topic</td><td>The payload wraps Meta's webhook JSON. Dedupe on the message id.</td></tr>
+<tr><td>RCS / SMS out</td><td>EUM SMS · <code>pinpoint-sms-voice-v2</code></td><td><code>send_text_message</code> (SMS); RCS send operation <span class="pill p-chk">CONFIRM</span></td><td>Uses the RCS testing agent with verified tester phones. Check country coverage and fees before creating the agent.</td></tr>
+<tr><td>RCS / SMS in</td><td><code>pinpoint-sms-voice-v2</code> → SNS</td><td>Two-way SMS and RCS event destination</td><td>Button postbacks carry our payload, for example <code>FC|SAFE|caseId</code>.</td></tr>
+<tr><td>Email out</td><td>SES · <code>sesv2</code></td><td><code>send_email</code> (Raw content for PDF attachments)</td><td>The From address is <code>claims@</code>. Reply-To is <code>case+&lt;caseId&gt;@in.&lt;domain&gt;</code>.</td></tr>
+<tr><td>Email in</td><td>SES receiving · <code>ses</code></td><td>Receipt rule set: S3 action + SNS/Lambda</td><td>us-east-1 supports receiving. The plus-address maps a reply to its case.</td></tr>
+<tr><td>Agent runtime</td><td>AgentCore · <code>bedrock-agentcore</code></td><td><code>invoke_agent_runtime</code></td><td>The session id is <code>caseId:personId</code>. The agent is written with the Strands Agents SDK.</td></tr>
+<tr><td>Memory</td><td>AgentCore Memory</td><td><code>create_event</code>, <code>retrieve_memory_records</code></td><td>Namespaces: <code>/person/{phoneHash}</code> and <code>/case/{caseId}</code>.</td></tr>
+<tr><td>Model</td><td>Bedrock · <code>bedrock-runtime</code></td><td>Converse API through Strands</td><td>A current Claude model via a us-east-1 inference profile, for both text and image input.</td></tr>
+<tr><td>Safety</td><td>Bedrock Guardrails</td><td><code>apply_guardrail</code></td><td>Applied to every outbound message: no fault language, PII masking in logs, no coverage promises.</td></tr>
+<tr><td>Voice notes</td><td>Transcribe · <code>transcribe</code></td><td><code>start_transcription_job</code> with language identification</td><td>es-MX, en-US and pt-BR. Transcribe lists Ogg among its supported formats, so WhatsApp voice notes should go in without ffmpeg. Test one real voice note before relying on it.</td></tr>
+<tr><td>Orchestration</td><td>Step Functions, EventBridge</td><td>Scheduler for the chase ladder</td><td>One state machine per catastrophe event, plus a Map state over the people in the zone.</td></tr>
+</table></div>
+
+<h2 id="data">8 · Data model (DynamoDB)</h2>
+<div class="tbl"><table>
+<tr><th>Table</th><th>Key</th><th>Main attributes</th></tr>
+<tr><td><code>cases</code></td><td>PK <code>caseId</code></td><td>type (AUTO_JOINT | CAT_FNOL), status, eventId, createdAt, approvals{A,B}, reportS3, insurerEmails[]</td></tr>
+<tr><td><code>parties</code></td><td>PK <code>caseId</code>, SK <code>role#personId</code></td><td>role (A | B | POLICYHOLDER), phoneHash, channel, language, policyId, lastSeenAt</td></tr>
+<tr><td><code>facts</code></td><td>PK <code>caseId</code>, SK <code>factId</code></td><td>field, valueA, valueB, status (AGREED | ONLY_A | ONLY_B | CONFLICT | DISPUTED), evidence[] (S3 keys + message ids)</td></tr>
+<tr><td><code>policies</code></td><td>PK <code>policyId</code></td><td>holder, phone, address, lat, lon, covers[], deductible, status, vulnerableFlag (seeded mock data)</td></tr>
+<tr><td><code>events</code></td><td>PK <code>eventId</code></td><td>source (NWS | NHC | USGS | GDACS | MANUAL), hazard, polygon (GeoJSON in S3), startedAt, counters</td></tr>
+<tr><td><code>outreach</code></td><td>PK <code>eventId</code>, SK <code>policyId</code></td><td>state (QUEUED | SENT | SAFE | DAMAGE | HELP | SILENT | ESCALATED), attempts[], nextActionAt</td></tr>
+<tr><td><code>messages</code></td><td>PK <code>msgId</code></td><td>For dedupe and audit, with a TTL. The full transcript lives in S3.</td></tr>
+</table></div>
+<p>Store phone numbers as a salted hash in keys and keep the plain number in one encrypted attribute. The demo uses invented people only.</p>
+
+<h2 id="agent">9 · Agent design</h2>
+<h3>Tools (Strands <code>@tool</code>)</h3>
+<div class="tbl"><table>
+<tr><th>Tool</th><th>Purpose</th></tr>
+<tr><td><code>get_case</code> / <code>update_case</code></td><td>Read and write case state and approvals.</td></tr>
+<tr><td><code>lookup_policy</code></td><td>Find a policy by number, plate or phone. Returns status and covers.</td></tr>
+<tr><td><code>extract_facts</code></td><td>Turns one message or piece of evidence into typed facts (schema below).</td></tr>
+<tr><td><code>reconcile</code></td><td>Plain code, not the LLM: compares the A and B fact sets field by field. The LLM only judges whether two free-text values mean the same thing.</td></tr>
+<tr><td><code>triage_photo</code></td><td>Bedrock vision: damage type, severity 1–4, EXIF check, perceptual hash.</td></tr>
+<tr><td><code>transcribe_voice</code></td><td>Transcribes a voice note from S3 and returns the text and detected language.</td></tr>
+<tr><td><code>send</code></td><td>One outbound message. The Send Lambda chooses the channel. The text passes Guardrails first.</td></tr>
+<tr><td><code>render_report</code></td><td>Builds the joint report or FNOL as HTML, converts it to PDF, and stores it in S3.</td></tr>
+<tr><td><code>handoff_human</code></td><td>Injury, NEED HELP, abuse or a confused user → stop and give a named person and phone number.</td></tr>
+</table></div>
+<h3>Fact schema</h3>
+<pre><code>{
+  "field": "signal_state | speed_kmh | direction | lane | impact_point | time | location | injuries | damage_part | third_party_plate | weather",
+  "value": "red",
+  "party": "A",
+  "confidence": 0.82,
+  "evidence": [{"type": "voice", "s3": "media/c123/a/v1.ogg", "quote": "the light had just turned red"}],
+  "language": "es"
+}</code></pre>
+<h3>Rules the agent never breaks</h3>
+<ul>
+  <li>It says it is an AI in its first message.</li>
+  <li>It asks about injuries before anything else. If anyone is hurt, it gives the emergency number and stops the intake.</li>
+  <li>It never says who is at fault and never says whether a claim is covered.</li>
+  <li>It never shows one driver's personal data to the other driver. Each sees only the shared crash facts and the other driver's insurer.</li>
+  <li>It hands off to a named human whenever someone needs help, is upset, or asks for a person.</li>
+</ul>
+
+<h2 id="cat">10 · Catastrophe data</h2>
+<div class="tbl"><table>
+<tr><th>Source</th><th>Coverage</th><th>Format</th><th>Use</th></tr>
+<tr><td>NWS alerts API (<code>api.weather.gov/alerts/active</code>)</td><td>US</td><td>CAP / GeoJSON with polygons</td><td>Hurricane, flood and fire warnings: live trigger</td></tr>
+<tr><td>NHC GIS (forecast cone, wind field)</td><td>Atlantic, E. Pacific</td><td>Shapefile / KML, archived per storm</td><td>Otis replay (EP18, 2023)</td></tr>
+<tr><td>USGS earthquake feeds + ShakeMap</td><td>Global</td><td>GeoJSON</td><td>Earthquakes M≥6: intensity contour as the zone</td></tr>
+<tr><td>GDACS</td><td>Global, incl. Mexico</td><td>RSS / GeoJSON</td><td>Fallback trigger outside the US</td></tr>
+<tr><td>Manual zone</td><td>Any</td><td>Polygon drawn on the console</td><td>Operator override, also the judge test path</td></tr>
+</table></div>
+<p><b>Replay harness.</b> <code>replay.py --event otis-2023 --speed 60x</code> plays the archived NHC advisories in order against 500 synthetic policyholders around Acapulco, with scripted replies (70% within 30 minutes, 10% need help, 20% silent). It writes the timeline and the metrics we quote in the video. Before quoting any Otis facts (landfall time, category, insured losses), take them from the official NHC report and the Mexican insurers' association (AMIS), and cite those sources in the video.</p>
+
+<h2 id="repo">11 · Repo and deploy</h2>
+<pre><code>claimline/
+  infra/                 # CDK (Python)
+    core_stack.py        # SNS, router, send Lambda, DynamoDB, S3, SES rules, Guardrail
+    agent_stack.py       # AgentCore Runtime + Memory, IAM
+    cat_stack.py         # EventBridge poller, Step Functions, replay bucket
+  agent/                 # Strands agent, tools, prompts (en/es/pt)
+  lambdas/router  lambdas/send  lambdas/ses_inbound  lambdas/flow_endpoint  lambdas/poller
+  reports/               # HTML templates → PDF
+  seed/                  # policies.csv, synthetic people, Otis advisories
+  replay/                # replay.py, dashcam ground-truth set, metrics.ipynb
+  docs/                  # architecture.png, ORIGINAL_WORK.md, JUDGE_TEST.md
+  README.md              # cdk deploy in one command, env vars, test path
+</code></pre>
+<p>Region us-east-1. One <code>cdk deploy --all</code> from a clean account. All secrets live in Secrets Manager (WABA phone number id, Flow private key). MIT licence.</p>
+
+<h2 id="demo">12 · Demo and proof</h2>
+<h3>Video, 3:00 maximum</h3>
+<div class="tbl"><table>
+<tr><th>Time</th><th>Scene</th></tr>
+<tr><td>0:00–0:20</td><td>Split screen: two phones, Spanish and English, and the reconciliation table filling in. On-screen line: "Two drivers. Two languages. One report."</td></tr>
+<tr><td>0:20–1:30</td><td>BothSides end to end: QR join, voice note, photos, a conflict question to each driver, approval in the Flow, both insurer inboxes, the adjuster's reply on WhatsApp.</td></tr>
+<tr><td>1:30–2:15</td><td>First Call: the Otis replay. The map zone lights up, an RCS card arrives, then a WhatsApp template, a voice note saying "roof gone", the FNOL opens, the worklist email arrives. The counter climbs to the reached % at 60 minutes.</td></tr>
+<tr><td>2:15–2:40</td><td>Architecture diagram with every CDS API named.</td></tr>
+<tr><td>2:40–3:00</td><td>Measured numbers and the partner offer: "deploys into an insurer's AWS account in one command".</td></tr>
+</table></div>
+<p>If First Call goes in as its own entry, its video gets the full 3 minutes, and the BothSides video uses 0:00–2:15 for BothSides.</p>
+<h3>Numbers to measure (none invented)</h3>
+<ul>
+  <li><b>BothSides:</b> 10 public dashcam crash videos as ground truth. Two volunteers narrate each one from opposite sides, with a deliberate bias, in Spanish and English. We report the % of real conflicts the agent caught, false conflicts it raised, and median minutes to a report both drivers approved.</li>
+  <li><b>First Call:</b> on the Otis replay with 500 synthetic policyholders, we report the % reached at 15 and 60 minutes, the median time from alert to FNOL, and adjuster minutes saved by the ranked list compared with an unranked list.</li>
+</ul>
+
+<h2 id="plan">13 · 11-day plan</h2>
+<p class="legend">P1 = core and BothSides. P2 = channels, First Call, video. Weekdays follow the 2026 calendar. Unfinished work from Oct 16–17 carries into the following days. The highlighted row is today.</p>
+<div class="tbl"><table>
+<tr><th>Date</th><th>P1</th><th>P2</th><th>Done when</th></tr>
+<tr><td>Fri Oct 16</td><td>Confirm the API names in §7; router plus WhatsApp echo with media to S3</td><td>Submit the WhatsApp templates and Flow, RCS tester invites, SES domain plus inbound rule</td><td>A voice note reaches S3</td></tr>
+<tr><td>Sat Oct 17</td><td>Agent on AgentCore, Memory, <code>extract_facts</code></td><td>Send Lambda with fallback ladder (WhatsApp → RCS → SMS → email)</td><td>The agent replies on WhatsApp</td></tr>
+<tr><td>Sun Oct 18</td><td>QR join, two-party case, <code>reconcile</code></td><td>Transcribe, photo triage tool</td><td>Two phones in one case</td></tr>
+<tr class="today"><td>Mon Oct 19</td><td>Conflict questions, translation</td><td>Report PDF, SES to both insurers</td><td>Report in both inboxes</td></tr>
+<tr><td>Tue Oct 20</td><td>Approval Flow, SES inbound reply back to WhatsApp</td><td>Policy seed, coverage pre-check, fraud flags</td><td>Full BothSides loop works</td></tr>
+<tr><td><b>Wed Oct 21</b></td><td colspan="2"><b>Checkpoint.</b> If BothSides runs end to end, P2 starts First Call. If it doesn't, both finish BothSides and First Call is dropped.</td><td>Go / no-go</td></tr>
+<tr><td>Thu Oct 22</td><td>Guardrails, handoff, edge cases</td><td>Poller, zone, outreach Step Function</td><td>RCS card from a manual zone</td></tr>
+<tr><td>Fri Oct 23</td><td>Dashcam ground-truth runs, metrics</td><td>Chase ladder, worklist email, replay harness</td><td>Otis replay runs</td></tr>
+<tr><td>Sat Oct 24</td><td colspan="2">Feature freeze. Clean-account <code>cdk deploy</code>, README, JUDGE_TEST.md, architecture diagram</td><td>A stranger can deploy it</td></tr>
+<tr><td>Sun–Mon Oct 25–26</td><td colspan="2">Record the videos on Sunday, while volunteers are free. Monday: edit, Devpost text using the rubric headings, the WhatsApp section for the Meta prize, rehearse 5 times on real phones</td><td>Videos uploaded</td></tr>
+<tr><td><b>Tue Oct 27</b></td><td colspan="2"><b>Submit.</b> Wed Oct 28 is buffer only. Keep everything running until Thu Nov 12.</td><td>Submitted</td></tr>
+</table></div>
+
+<h2 id="risks">14 · Risks</h2>
+<div class="tbl"><table>
+<tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+<tr><td>WhatsApp Business account, display name or templates not approved in time</td><td>Kills BothSides and the Meta prize</td><td>Everything should have been submitted on Fri Oct 16; if not, submit today. Use the Meta test number meanwhile. If still blocked on Wed Oct 21, BothSides runs on RCS/SMS and First Call becomes the lead entry.</td></tr>
+<tr><td>Driver B consent and data sharing</td><td>An insurance judge rejects the idea</td><td>Neutral joint report, approval from both drivers, both insurers get it, minimum data shared (§3 note).</td></tr>
+<tr><td>Dynamic Flow encryption takes too long</td><td>Approval step slips</td><td>Static Flow first. A message with quick-reply buttons as the last resort.</td></tr>
+<tr><td>RCS not available in the demo country, or testing fees</td><td>Weaker CDS story</td><td>RCS on US tester phones only. Mexico uses WhatsApp. Confirm fees before creating the agent.</td></tr>
+<tr><td>Judges can't reach the RCS tester flow</td><td>Functionality score</td><td>JUDGE_TEST.md uses WhatsApp plus email plus a manual zone, which needs no invite.</td></tr>
+<tr><td>Two entries ruled not "substantially different"</td><td>Lose one entry</td><td>Get the answer on Discord before the Wed Oct 21 checkpoint. Fallback: one entry with First Call as a 25-second scene.</td></tr>
+<tr><td>Only one weekend day before submission</td><td>Volunteers for dashcam narration and video shoot are short on time</td><td>Book the volunteers now for Fri Oct 23 evening (ground truth) and Sun Oct 25 (video).</td></tr>
+<tr><td>Model hallucinates a fact</td><td>Wrong report</td><td>Every fact needs evidence plus a quote. Reconciliation is plain code. Both drivers approve before anything is sent.</td></tr>
+</table></div>
+
+<h2 id="submit">15 · Submission checklist</h2>
+<ul class="check">
+  <li>ACE opportunity created per entry (net-new, campaign tag), IDs on the Devpost form</li>
+  <li>Repo public with MIT licence, or private and shared with <code>testing@devpost.com</code> and <code>aws-cds-partner@amazon.com</code></li>
+  <li>README: one-command deploy, env vars, cost note, ORIGINAL_WORK.md separating new code from reused samples</li>
+  <li>Devpost text uses the rubric headings and names every CDS API (send_whatsapp_message, Flows, RCS send, send_email, SES receiving)</li>
+  <li>An explicit "How we use WhatsApp (AWS End User Messaging Social)" section, required for the Meta prize</li>
+  <li>Architecture diagram with AWS icons</li>
+  <li>Video of 3 minutes or less on YouTube (public or unlisted), real phones, with the measured numbers on screen</li>
+  <li>JUDGE_TEST.md: the WhatsApp number, the join code, a test email address and how to trigger a manual zone</li>
+  <li>Everything stays deployed and within budget until Thu Nov 12</li>
+</ul>
+</main>
+</div>

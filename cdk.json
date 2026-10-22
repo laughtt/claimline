@@ -1,0 +1,7 @@
+{
+  "app": ".venv\\Scripts\\python.exe app.py",
+  "profile": "test",
+  "context": {
+    "wabaPhoneNumberId": ""
+  }
+}
