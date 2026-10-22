@@ -1,3 +1,4 @@
 aws-cdk-lib>=2.170.0,<3
 constructs>=10.0.0,<11
 boto3>=1.35
+uv==0.12.24  # builds the AgentCore bundle for linux arm64

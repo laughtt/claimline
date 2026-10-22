@@ -20,6 +20,7 @@ from aws_cdk import (
 from constructs import Construct
 
 from infra import naming
+from infra.agent_stack import AgentConstruct
 
 # Tables from spec §8: (suffix, partition key, sort key or None)
 TABLES = [
@@ -90,7 +91,10 @@ class CoreStack(Stack):
             resources=["*"],
         ))
 
-        # Router Lambda: dedupe, media to S3, hand off
+        # Agent on AgentCore Runtime + Memory
+        self.agent = AgentConstruct(self, "Agent", tables=self.tables, send_fn=self.send_fn)
+
+        # Router Lambda: dedupe, media to S3, hand off to the agent
         self.router_fn = self._function(
             "Router", "router",
             env={
@@ -98,9 +102,13 @@ class CoreStack(Stack):
                 "MESSAGES_TABLE": self.tables["messages"].table_name,
                 "SEND_FUNCTION": self.send_fn.function_name,
                 "WABA_PHONE_NUMBER_ID": waba_phone_number_id,
+                "AGENT_RUNTIME_ARN": self.agent.runtime.agent_runtime_arn,
             },
             dlq=dlq,
+            # The agent takes a few seconds per turn, more with tools
+            timeout=Duration.seconds(120),
         )
+        self.agent.grant_invoke(self.router_fn)
         self.media_bucket.grant_read_write(self.router_fn)
         self.tables["messages"].grant_read_write_data(self.router_fn)
         self.send_fn.grant_invoke(self.router_fn)
@@ -110,7 +118,8 @@ class CoreStack(Stack):
         ))
         self.router_fn.add_event_source(sources.SnsEventSource(self.inbound_topic))
 
-    def _function(self, logical_id: str, folder: str, env: dict, dlq: sqs.IQueue | None = None) -> lambda_.Function:
+    def _function(self, logical_id: str, folder: str, env: dict, dlq: sqs.IQueue | None = None,
+                  timeout: Duration = Duration.seconds(30)) -> lambda_.Function:
         fn_name = naming.name(folder)
         role = iam.Role(
             self, f"{logical_id}Role",
@@ -132,7 +141,7 @@ class CoreStack(Stack):
             code=lambda_.Code.from_asset(f"lambdas/{folder}"),
             role=role,
             log_group=log_group,
-            timeout=Duration.seconds(30),
+            timeout=timeout,
             memory_size=256,
             environment=env,
             dead_letter_queue=dlq,

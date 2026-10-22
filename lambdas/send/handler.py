@@ -23,7 +23,9 @@ def handler(event, context):
 
 
 def send_whatsapp(event) -> str:
-    body = {"messaging_product": "whatsapp", "recipient_type": "individual", "to": event["to"]}
+    # Meta's webhook gives "from" without the plus; EUM Social wants E.164
+    to = event["to"] if event["to"].startswith("+") else f"+{event['to']}"
+    body = {"messaging_product": "whatsapp", "recipient_type": "individual", "to": to}
     if "interactive" in event:
         body.update(type="interactive", interactive=event["interactive"])
     else:

@@ -13,7 +13,9 @@ ONLY_A = "ONLY_A"
 ONLY_B = "ONLY_B"
 CONFLICT = "CONFLICT"
 
-# Numeric fields: values within this tolerance count as the same
+# Numeric fields: values within this tolerance count as the same.
+# A field may carry its subject after "@" ("speed_kmh@A"); the tolerance
+# applies to the base name.
 NUMERIC_TOLERANCE = {"speed_kmh": 10}
 
 
@@ -44,7 +46,7 @@ def _normalize(value: str) -> str:
 def _exact_or_numeric_match(field_name: str, a: str, b: str) -> bool:
     if _normalize(a) == _normalize(b):
         return True
-    tolerance = NUMERIC_TOLERANCE.get(field_name)
+    tolerance = NUMERIC_TOLERANCE.get(field_name.split("@")[0])
     if tolerance is not None:
         try:
             return abs(float(a) - float(b)) <= tolerance
