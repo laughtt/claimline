@@ -24,9 +24,21 @@ How to work:
 - Use message_other_driver only for things the other driver must know, in their language."""
 
 
-def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other_language: str = "") -> str:
+def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other_language: str = "",
+                  injuries_from_a: str = "") -> str:
     join_link = f"https://wa.me/{WHATSAPP_NUMBER}?text=JOIN%20{case_id}"
     situation = [f"You are talking to driver {role} of case {case_id}."]
+    if role == "B":
+        # B arrives through a link and knows nothing about Claimline; tell the
+        # model what the case is, but not A's version, so B's account stays independent
+        situation.append(
+            "Driver B was just in a crash with driver A. Driver A opened this case and showed driver B "
+            "the join link. You are helping both of them write one neutral joint report that goes to "
+            "both insurers. Driver B gives their own version; never tell them what driver A said "
+            "about how the crash happened."
+        )
+        if injuries_from_a:
+            situation.append(f"Driver A said about injuries: {injuries_from_a}. Still ask driver B.")
     if other_joined:
         lang = other_language or "unknown, use the language of their messages"
         situation.append(f"The other driver's language: {lang}.")
@@ -34,8 +46,10 @@ def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other
         situation.append("This driver just opened the case.")
     elif event == "joined":
         situation.append(
-            "This driver just joined with the join code. Greet them, and use message_other_driver "
-            "to tell driver A that the other driver has joined."
+            "This driver just joined with the join code. In your first message, say you are an AI "
+            "assistant, that they joined the joint report the other driver started, and what happens "
+            "next; then ask about injuries. Use message_other_driver to tell driver A that the other "
+            "driver has joined."
         )
     elif event == "bad_code":
         situation.append("This driver sent a join code that doesn't exist. Ask them to check it.")

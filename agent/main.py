@@ -5,6 +5,7 @@ The router Lambda sends {"phone": "+51...", "type": "text", "text": "...",
 Conversation history lives in AgentCore Memory, one session per driver per case.
 """
 
+import json
 import os
 
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
@@ -28,6 +29,13 @@ model = BedrockModel(model_id=MODEL_ID, region_name=REGION)
 def invoke(payload, context):
     party, event = cases.resolve_party(payload["phone"], payload.get("text") or "")
     other = cases.other_party(party)
+    print(json.dumps({"caseId": party.case_id, "role": party.role, "event": event,
+                      "otherJoined": other is not None, "msgId": payload.get("msgId")}))
+
+    injuries_from_a = ""
+    if party.role == "B":
+        facts_a, _ = cases.load_facts(party.case_id)
+        injuries_from_a = "; ".join(f.value for f in facts_a if f.field.startswith("injuries@"))
 
     session_manager = None
     if MEMORY_ID:
@@ -44,6 +52,7 @@ def invoke(payload, context):
         model=model,
         system_prompt=prompts.system_prompt(
             party.role, party.case_id, event, other is not None, other.language if other else "",
+            injuries_from_a,
         ),
         tools=build_tools(party, payload.get("msgId"), payload.get("mediaKey")),
         session_manager=session_manager,
