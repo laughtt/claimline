@@ -34,6 +34,9 @@ FIELDS = {
     "signal_state", "speed_kmh", "direction", "lane", "impact_point", "time",
     "location", "injuries", "damage_part", "third_party_plate", "weather",
 }
+# What a driver must have told before the two versions are compared
+VERSION_FIELDS = {"location", "time", "impact_point"}
+NOTES_KEPT = 5
 
 
 @dataclass
@@ -82,7 +85,9 @@ def load_parties(case_id: str) -> list[Party]:
         KeyConditionExpression="caseId = :c",
         ExpressionAttributeValues={":c": case_id},
     )["Items"]
-    return [Party(case_id, i["role"], i["phone"], i["phoneHash"], i.get("language", "")) for i in items]
+    # Skip the NOTES# rows that share the case's partition
+    return [Party(case_id, i["role"], i["phone"], i["phoneHash"], i.get("language", ""))
+            for i in items if "role" in i]
 
 
 def record_fact(party: Party, field: str, about: str, value: str, quote: str, confidence: float,
@@ -121,6 +126,32 @@ def load_facts(case_id: str) -> tuple[list[Fact], list[Fact]]:
         for i in items
     ]
     return [f for f in facts if f.party == "A"], [f for f in facts if f.party == "B"]
+
+
+def add_note(party: Party, text: str) -> None:
+    """Remember a message sent to this driver from the other driver's conversation.
+
+    Each driver's agent only sees its own history, so without this it would
+    ask again what the other conversation already asked.
+    """
+    key = {"caseId": party.case_id, "sk": f"NOTES#{party.role}"}
+    notes = parties_table.get_item(Key=key).get("Item", {}).get("notes", [])
+    parties_table.put_item(Item={**key, "notes": (notes + [text])[-NOTES_KEPT:]})
+
+
+def notes_for(party: Party) -> list[str]:
+    key = {"caseId": party.case_id, "sk": f"NOTES#{party.role}"}
+    return parties_table.get_item(Key=key).get("Item", {}).get("notes", [])
+
+
+def both_versions_given(case_id: str) -> bool:
+    """Each driver has said where, when, where the cars hit and how (light or direction)."""
+    def given(facts: list[Fact]) -> bool:
+        fields = {f.field.split("@")[0] for f in facts}
+        return VERSION_FIELDS <= fields and bool(fields & {"signal_state", "direction"})
+
+    facts_a, facts_b = load_facts(case_id)
+    return given(facts_a) and given(facts_b)
 
 
 def set_language(party: Party, language: str) -> None:

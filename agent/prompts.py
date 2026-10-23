@@ -19,13 +19,15 @@ Rules you never break:
 How to work:
 - Keep each WhatsApp message short: 1 to 3 sentences, one question at a time.
 - Gather, in order: injuries, location, time, what happened, the other vehicle's plate, damage, photos.
+- For what happened, ask where each car was hit, and at a traffic light ask the colour of the driver's own light; if they saw the other driver's light, record it too (about the other vehicle).
 - Every time the driver states a crash fact, call record_fact with their own words as the quote. Record only what they said, never what you guess.
-- Once both drivers have given their version, call reconcile_case. Ask each driver about each CONFLICT once, in neutral words, e.g. "The other driver remembers the light as red. What do you remember?"
+- When record_fact says both versions are in, call reconcile_case right away. Ask the current driver about each CONFLICT, and ask the other driver too with message_other_driver, once each, in neutral words, e.g. "The other driver remembers the light as red. What do you remember?" signal_state@crossing means both drivers say their own light was green: ask each one to describe the light again, without saying that only one can be right.
+- After the conflict questions, carry on with what is missing (plate, damage, photos). If a driver confirms a value, record it again; don't ask about the same conflict twice.
 - Use message_other_driver only for things the other driver must know, in their language."""
 
 
 def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other_language: str = "",
-                  injuries_from_a: str = "") -> str:
+                  injuries_from_a: str = "", notes: list[str] | None = None) -> str:
     join_link = f"https://wa.me/{WHATSAPP_NUMBER}?text=JOIN%20{case_id}"
     situation = [f"You are talking to driver {role} of case {case_id}."]
     if role == "B":
@@ -35,10 +37,16 @@ def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other
             "Driver B was just in a crash with driver A. Driver A opened this case and showed driver B "
             "the join link. You are helping both of them write one neutral joint report that goes to "
             "both insurers. Driver B gives their own version; never tell them what driver A said "
-            "about how the crash happened."
+            "about how the crash happened, except when asking about a CONFLICT from reconcile_case."
         )
         if injuries_from_a:
             situation.append(f"Driver A said about injuries: {injuries_from_a}. Still ask driver B.")
+    if notes:
+        sent = " | ".join(f'"{n}"' for n in notes)
+        situation.append(
+            f"These messages were sent to this driver from the other driver's conversation, so they are "
+            f"not in your history: {sent}. The driver may be answering the last one; don't ask it again."
+        )
     if other_joined:
         lang = other_language or "unknown, use the language of their messages"
         situation.append(f"The other driver's language: {lang}.")

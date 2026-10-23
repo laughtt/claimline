@@ -11,6 +11,7 @@ import boto3
 from strands import tool
 
 from agent import cases
+from agent.judge import same_meaning
 from agent.reconcile import reconcile
 
 lambda_ = boto3.client("lambda")
@@ -42,8 +43,15 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             return f"Unknown field {field}. Use one of: {', '.join(sorted(cases.FIELDS))}"
         if about not in cases.SUBJECTS:
             return "about must be A, B or scene."
+        joined = cases.other_party(party) is not None
+        # Only the fact that completes both versions triggers the comparison
+        was_complete = joined and cases.both_versions_given(party.case_id)
         cases.record_fact(party, field, about, value, quote, confidence, evidence_type, msg_id, media_key)
-        return f"Saved {field} about {about} = {value}, as told by driver {party.role}."
+        saved = f"Saved {field} about {about} = {value}, as told by driver {party.role}."
+        if joined and not was_complete and cases.both_versions_given(party.case_id):
+            saved += (" Both drivers have now given their version. Call reconcile_case before "
+                      "asking anything else.")
+        return saved
 
     @tool
     def set_language(language: str) -> str:
@@ -57,13 +65,17 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
 
     @tool
     def reconcile_case() -> str:
-        """Compare both drivers' facts. Returns each field as AGREED, ONLY_A, ONLY_B or CONFLICT."""
+        """Compare both drivers' facts. Returns each field as AGREED, ONLY_A, ONLY_B or CONFLICT.
+
+        Ask the current driver about each CONFLICT, and the other driver through
+        message_other_driver, once each and without saying who is right.
+        """
         facts_a, facts_b = cases.load_facts(party.case_id)
         if not cases.other_party(party):
             return "The other driver has not joined yet, so there is nothing to compare."
         rows = [
             {"field": r.field, "status": r.status, "driver_A": r.value_a, "driver_B": r.value_b}
-            for r in reconcile(facts_a, facts_b)
+            for r in reconcile(facts_a, facts_b, same_meaning)
         ]
         return json.dumps({"you_are": party.role, "facts": rows}, ensure_ascii=False)
 
@@ -86,6 +98,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             InvocationType="Event",
             Payload=json.dumps({"channel": "whatsapp", "to": other.phone, "text": text}).encode("utf-8"),
         )
+        cases.add_note(other, text)
         return f"Sent to driver {other.role}."
 
     @tool

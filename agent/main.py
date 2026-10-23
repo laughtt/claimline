@@ -32,11 +32,6 @@ def invoke(payload, context):
     print(json.dumps({"caseId": party.case_id, "role": party.role, "event": event,
                       "otherJoined": other is not None, "msgId": payload.get("msgId")}))
 
-    injuries_from_a = ""
-    if party.role == "B":
-        facts_a, _ = cases.load_facts(party.case_id)
-        injuries_from_a = "; ".join(f.value for f in facts_a if f.field.startswith("injuries@"))
-
     session_manager = None
     if MEMORY_ID:
         session_manager = AgentCoreMemorySessionManager(
@@ -48,19 +43,33 @@ def invoke(payload, context):
             region_name=REGION,
         )
 
+    agent = build_agent(party, event, payload.get("msgId"), payload.get("mediaKey"),
+                        session_manager=session_manager)
+    result = agent(describe(payload))
+    return {"reply": str(result).strip(), "caseId": party.case_id, "role": party.role, "event": event}
+
+
+def build_agent(party, event, msg_id, media_key, session_manager=None, messages=None) -> Agent:
+    """The agent for one turn of one driver; scripts/simulate.py builds it the same way."""
+    other = cases.other_party(party)
+    injuries_from_a = ""
+    if party.role == "B":
+        facts_a, _ = cases.load_facts(party.case_id)
+        injuries_from_a = "; ".join(f.value for f in facts_a if f.field.startswith("injuries@"))
+
     agent = Agent(
         model=model,
         system_prompt=prompts.system_prompt(
             party.role, party.case_id, event, other is not None, other.language if other else "",
-            injuries_from_a,
+            injuries_from_a, cases.notes_for(party),
         ),
-        tools=build_tools(party, payload.get("msgId"), payload.get("mediaKey")),
+        tools=build_tools(party, msg_id, media_key),
         session_manager=session_manager,
+        messages=messages,
         callback_handler=None,
     )
     drop_reasoning(agent.messages)
-    result = agent(describe(payload))
-    return {"reply": str(result).strip(), "caseId": party.case_id, "role": party.role, "event": event}
+    return agent
 
 
 def drop_reasoning(messages) -> None:
