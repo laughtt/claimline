@@ -28,6 +28,8 @@ PHONE_SALT = os.environ.get("PHONE_SALT", "claimline")
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 6
 JOIN_RE = re.compile(r"^\s*JOIN\s+([A-Za-z0-9]{6})\b", re.IGNORECASE)
+# Exact word only, so a driver doesn't trigger it by accident
+RESET_RE = re.compile(r"^\s*RESET\s*$", re.IGNORECASE)
 
 SUBJECTS = {"A", "B", "scene"}
 FIELDS = {
@@ -52,20 +54,25 @@ def phone_hash(phone: str) -> str:
     return hashlib.sha256(f"{PHONE_SALT}:{phone}".encode()).hexdigest()
 
 
-def resolve_party(phone: str, text: str) -> tuple[Party, str]:
+def resolve_party(phone: str, text: str) -> tuple[Party | None, str]:
     """Find or create the caller's party.
 
     Returns the party and what happened: ``new_case``, ``joined``,
-    ``existing``, ``bad_code`` or ``case_full``.
+    ``existing``, ``bad_code``, ``case_full`` or ``reset``. The party is None
+    for ``reset``, and for a failed join from a phone with no case: opening a
+    case there would leave driver B as driver A of a crash nobody else is in.
     """
     h = phone_hash(phone)
+    if RESET_RE.match(text or ""):
+        # The old case stays in the tables; the phone just stops pointing at it
+        parties_table.delete_item(Key={"caseId": f"PHONE#{h}", "sk": "ACTIVE"})
+        return None, "reset"
     match = JOIN_RE.match(text or "")
     if match:
         party, event = _join(match.group(1).upper(), phone, h)
         if party:
             return party, event
-        current = _active_party(h)
-        return (current or _new_case(phone, h)), event
+        return _active_party(h), event
 
     current = _active_party(h)
     if current:

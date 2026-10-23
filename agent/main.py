@@ -21,6 +21,15 @@ REGION = os.environ.get("AWS_REGION", "eu-west-1")
 MODEL_ID = os.environ.get("MODEL_ID", "eu.anthropic.claude-sonnet-5-5")
 MEMORY_ID = os.environ.get("MEMORY_ID", "")
 
+FIXED_REPLIES = {
+    "reset": "Listo, empezamos de cero. Escribe para abrir un caso nuevo.\n"
+             "Done, starting over. Write to open a new case.",
+    "bad_code": "Ese código no existe. Revisa el código JOIN que te mostró el otro conductor.\n"
+                "That code doesn't exist. Check the JOIN code the other driver showed you.",
+    "case_full": "Ese caso ya tiene dos conductores.\n"
+                 "That case already has two drivers.",
+}
+
 app = BedrockAgentCoreApp()
 model = BedrockModel(model_id=MODEL_ID, region_name=REGION)
 
@@ -28,6 +37,10 @@ model = BedrockModel(model_id=MODEL_ID, region_name=REGION)
 @app.entrypoint
 def invoke(payload, context):
     party, event = cases.resolve_party(payload["phone"], payload.get("text") or "")
+    if party is None:
+        # No case to talk about, and no language known yet: a fixed bilingual reply
+        print(json.dumps({"event": event, "msgId": payload.get("msgId")}))
+        return {"reply": FIXED_REPLIES[event], "caseId": None, "role": None, "event": event}
     other = cases.other_party(party)
     print(json.dumps({"caseId": party.case_id, "role": party.role, "event": event,
                       "otherJoined": other is not None, "msgId": payload.get("msgId")}))

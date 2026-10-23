@@ -48,6 +48,9 @@ class FakeTable:
         for name, value in re.findall(r"([#\w]+)\s*=\s*(:\w+)", UpdateExpression):
             item[names.get(name, name)] = ExpressionAttributeValues[value]
 
+    def delete_item(self, Key):
+        self.items.pop(self._k(Key), None)
+
 
 cases.cases_table = FakeTable(["caseId"])
 cases.parties_table = FakeTable(["caseId", "sk"])
@@ -64,16 +67,23 @@ class FakeLambda:
 tools.lambda_ = FakeLambda()
 
 PHONES = {"A": "+10000000001", "B": "+10000000002"}
-history = {"A": [], "B": []}
+# Keyed like the AgentCore Memory session: one history per case and role
+history = {}
 
 
 def turn(who, text):
     party, event = cases.resolve_party(PHONES[who], text)
-    agent = main.build_agent(party, event, f"sim-{who}-{len(history[who])}", None, messages=history[who])
+    if party is None:
+        print(f"\n### Telefono {who} [sin caso, {event}]: {text}")
+        print(f"<<< Respuesta fija a {who}: {main.FIXED_REPLIES[event]}")
+        return None, main.FIXED_REPLIES[event]
+    session = f"{party.case_id}-{party.role}"
+    agent = main.build_agent(party, event, f"sim-{session}-{len(history.get(session, []))}", None,
+                             messages=history.get(session, []))
     start = len(agent.messages)
     reply = str(agent(text)).strip()
-    history[who] = agent.messages
-    print(f"\n### Conductor {who} [{party.case_id}/{party.role}, {event}]: {text}")
+    history[session] = agent.messages
+    print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]: {text}")
     for m in agent.messages[start:]:
         for block in m["content"]:
             if "toolUse" in block:
@@ -90,6 +100,7 @@ def turn(who, text):
 
 party_a, _ = turn("A", "Hola, acabo de tener un choque en un cruce")
 turn("A", "No, nadie está herido, solo daños en los coches")
+turn("B", "JOIN ZZZZZZ")  # wrong code from a phone with no case: no case may be opened
 turn("B", f"JOIN {party_a.case_id}")
 turn("B", "No, nobody is hurt")
 turn("A", "Fue en el cruce de Av. Javier Prado con Av. Arequipa, a las 7:40 de la noche. Yo iba a unos 40 km/h "
@@ -105,3 +116,10 @@ turn("B", "I'm sure it was green for me.")
 print("\n### Hechos guardados")
 for f in sorted(cases.facts_table.items.values(), key=lambda i: i["factId"]):
     print(f"   {f['factId']}: {f['value']}  ({f['evidence'][0]['quote']})")
+
+# Same two phones, a fresh case: what the team does between demo rehearsals
+turn("A", "RESET")
+turn("B", "RESET")
+party_a2, _ = turn("A", "Hola, he tenido otro choque")
+assert party_a2.case_id != party_a.case_id, "RESET should open a new case"
+turn("B", f"JOIN {party_a2.case_id}")
