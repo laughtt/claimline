@@ -67,6 +67,8 @@ class FakeLambda:
 tools.lambda_ = FakeLambda()
 
 PHONES = {"A": "+10000000001", "B": "+10000000002"}
+# What Transcribe detects for each scripted driver
+VOICE_LANGUAGES = {"A": "es-US", "B": "en-US"}
 # Keyed like the AgentCore Memory session: one history per case and role
 history = {}
 
@@ -86,7 +88,7 @@ def turn(who, text, voice=False):
     message = text
     if voice:
         message = main.describe({"type": "audio", "mediaKey": media_key,
-                                 "transcript": {"text": text, "language": "en-US"}})
+                                 "transcript": {"text": text, "language": VOICE_LANGUAGES[who]}})
     reply = str(agent(message)).strip()
     history[session] = agent.messages
     print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]{' (nota de voz)' if voice else ''}: {text}")
@@ -104,30 +106,38 @@ def turn(who, text, voice=False):
     return party, reply
 
 
-party_a, _ = turn("A", "Hola, acabo de tener un choque en un cruce")
-turn("A", "No, nadie está herido, solo daños en los coches")
-turn("B", "JOIN ZZZZZZ")  # wrong code from a phone with no case: no case may be opened
-turn("B", f"JOIN {party_a.case_id}")
-turn("B", "No, nobody is hurt")
-turn("A", "Fue en el cruce de Av. Javier Prado con Av. Arequipa, a las 7:40 de la noche. Yo iba a unos 40 km/h "
-          "y el semáforo estaba en verde para mí. El otro coche me golpeó en la puerta delantera derecha. "
-          "Su placa es ABC-123.")
-# B speaks; written the way Transcribe returns it, without the plate's hyphen or exact punctuation
-turn("B", "It was at Javier Prado and Arequipa around 7:40 pm my light was green I was doing about 30 "
-          "kilometers an hour and I hit the other car on its front right door", voice=True)
-turn("A", "Eso es todo lo que recuerdo.")
-turn("B", "That's everything I remember.")
-turn("A", "Estoy seguro, para mí estaba en verde.")
-turn("B", "I'm sure it was green for me.")
+def print_facts():
+    print("\n### Hechos guardados")
+    for f in sorted(cases.facts_table.items.values(), key=lambda i: i["factId"]):
+        ev = f["evidence"][0]
+        print(f"   {f['factId']}: {f['value']}  [{ev['type']}] ({ev['quote']})")
 
-print("\n### Hechos guardados")
-for f in sorted(cases.facts_table.items.values(), key=lambda i: i["factId"]):
-    ev = f["evidence"][0]
-    print(f"   {f['factId']}: {f['value']}  [{ev['type']}] ({ev['quote']})")
 
-# Same two phones, a fresh case: what the team does between demo rehearsals
-turn("A", "RESET")
-turn("B", "RESET")
-party_a2, _ = turn("A", "Hola, he tenido otro choque")
-assert party_a2.case_id != party_a.case_id, "RESET should open a new case"
-turn("B", f"JOIN {party_a2.case_id}")
+def main_scenario():
+    party_a, _ = turn("A", "Hola, acabo de tener un choque en un cruce")
+    turn("A", "No, nadie está herido, solo daños en los coches")
+    turn("B", "JOIN ZZZZZZ")  # wrong code from a phone with no case: no case may be opened
+    turn("B", f"JOIN {party_a.case_id}")
+    turn("B", "No, nobody is hurt")
+    turn("A", "Fue en el cruce de Av. Javier Prado con Av. Arequipa, a las 7:40 de la noche. Yo iba a unos 40 km/h "
+              "y el semáforo estaba en verde para mí. El otro coche me golpeó en la puerta delantera derecha. "
+              "Su placa es ABC-123.")
+    # B speaks; written the way Transcribe returns it, without the plate's hyphen or exact punctuation
+    turn("B", "It was at Javier Prado and Arequipa around 7:40 pm my light was green I was doing about 30 "
+              "kilometers an hour and I hit the other car on its front right door", voice=True)
+    turn("A", "Eso es todo lo que recuerdo.")
+    turn("B", "That's everything I remember.")
+    turn("A", "Estoy seguro, para mí estaba en verde.")
+    turn("B", "I'm sure it was green for me.")
+    print_facts()
+
+    # Same two phones, a fresh case: what the team does between demo rehearsals
+    turn("A", "RESET")
+    turn("B", "RESET")
+    party_a2, _ = turn("A", "Hola, he tenido otro choque")
+    assert party_a2.case_id != party_a.case_id, "RESET should open a new case"
+    turn("B", f"JOIN {party_a2.case_id}")
+
+
+if __name__ == "__main__":
+    main_scenario()

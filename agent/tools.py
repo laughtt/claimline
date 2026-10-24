@@ -34,7 +34,11 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
                 driver B is about "B"; "the other car ran the light" from
                 driver B is about "A".
             value: Short normalised value in English, e.g. "red", "50",
-                "front left". speed_kmh is a number only.
+                "front left". speed_kmh is a number only. A later call for
+                the same field and vehicle replaces the earlier value, so
+                damage_part lists every damaged part of that vehicle in one
+                value, e.g. "right door dented, mirror broken", including
+                parts already recorded.
             quote: The driver's own words the value comes from, in their language.
             confidence: 0 to 1, how sure you are the driver meant this.
             evidence_type: text, voice, photo or location.
