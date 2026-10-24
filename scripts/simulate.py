@@ -71,19 +71,25 @@ PHONES = {"A": "+10000000001", "B": "+10000000002"}
 history = {}
 
 
-def turn(who, text):
-    party, event = cases.resolve_party(PHONES[who], text)
+def turn(who, text, voice=False):
+    """One inbound message; voice=True sends text as an already transcribed voice note."""
+    party, event = cases.resolve_party(PHONES[who], "" if voice else text)
     if party is None:
         print(f"\n### Telefono {who} [sin caso, {event}]: {text}")
         print(f"<<< Respuesta fija a {who}: {main.FIXED_REPLIES[event]}")
         return None, main.FIXED_REPLIES[event]
     session = f"{party.case_id}-{party.role}"
-    agent = main.build_agent(party, event, f"sim-{session}-{len(history.get(session, []))}", None,
-                             messages=history.get(session, []))
+    msg_id = f"sim-{session}-{len(history.get(session, []))}"
+    media_key = f"media/inbound/{PHONES[who]}/{msg_id}" if voice else None
+    agent = main.build_agent(party, event, msg_id, media_key, messages=history.get(session, []))
     start = len(agent.messages)
-    reply = str(agent(text)).strip()
+    message = text
+    if voice:
+        message = main.describe({"type": "audio", "mediaKey": media_key,
+                                 "transcript": {"text": text, "language": "en-US"}})
+    reply = str(agent(message)).strip()
     history[session] = agent.messages
-    print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]: {text}")
+    print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]{' (nota de voz)' if voice else ''}: {text}")
     for m in agent.messages[start:]:
         for block in m["content"]:
             if "toolUse" in block:
@@ -106,8 +112,9 @@ turn("B", "No, nobody is hurt")
 turn("A", "Fue en el cruce de Av. Javier Prado con Av. Arequipa, a las 7:40 de la noche. Yo iba a unos 40 km/h "
           "y el semáforo estaba en verde para mí. El otro coche me golpeó en la puerta delantera derecha. "
           "Su placa es ABC-123.")
-turn("B", "It was at Javier Prado and Arequipa, around 7:40 pm. My light was green, I was doing about 30 km/h. "
-          "I hit the other car on its front right door.")
+# B speaks; written the way Transcribe returns it, without the plate's hyphen or exact punctuation
+turn("B", "It was at Javier Prado and Arequipa around 7:40 pm my light was green I was doing about 30 "
+          "kilometers an hour and I hit the other car on its front right door", voice=True)
 turn("A", "Eso es todo lo que recuerdo.")
 turn("B", "That's everything I remember.")
 turn("A", "Estoy seguro, para mí estaba en verde.")
@@ -115,7 +122,8 @@ turn("B", "I'm sure it was green for me.")
 
 print("\n### Hechos guardados")
 for f in sorted(cases.facts_table.items.values(), key=lambda i: i["factId"]):
-    print(f"   {f['factId']}: {f['value']}  ({f['evidence'][0]['quote']})")
+    ev = f["evidence"][0]
+    print(f"   {f['factId']}: {f['value']}  [{ev['type']}] ({ev['quote']})")
 
 # Same two phones, a fresh case: what the team does between demo rehearsals
 turn("A", "RESET")

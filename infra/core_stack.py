@@ -106,8 +106,9 @@ class CoreStack(Stack):
                 "AGENT_RUNTIME_VERSION": self.agent.runtime.agent_runtime_version,
             },
             dlq=dlq,
-            # The agent takes a few seconds per turn, more with tools
-            timeout=Duration.seconds(120),
+            # The agent takes a few seconds per turn, more with tools, plus up
+            # to 90 s transcribing a voice note first
+            timeout=Duration.seconds(240),
         )
         self.agent.grant_invoke(self.router_fn)
         self.media_bucket.grant_read_write(self.router_fn)
@@ -115,6 +116,12 @@ class CoreStack(Stack):
         self.send_fn.grant_invoke(self.router_fn)
         self.router_fn.add_to_role_policy(iam.PolicyStatement(
             actions=["social-messaging:GetWhatsAppMessageMedia"],
+            resources=["*"],
+        ))
+        # Transcribe reads the voice note and writes its JSON with the router's own permissions
+        self.router_fn.add_to_role_policy(iam.PolicyStatement(
+            actions=["transcribe:StartTranscriptionJob", "transcribe:GetTranscriptionJob",
+                     "transcribe:TagResource"],
             resources=["*"],
         ))
         self.router_fn.add_event_source(sources.SnsEventSource(self.inbound_topic))

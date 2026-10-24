@@ -1,7 +1,7 @@
 """AgentCore entrypoint: one inbound message in, one reply out.
 
 The router Lambda sends {"phone": "+51...", "type": "text", "text": "...",
-"mediaKey": null, "msgId": "..."} and delivers whatever comes back in "reply".
+"mediaKey": null, "transcript": null, "msgId": "..."} and delivers whatever comes back in "reply".
 Conversation history lives in AgentCore Memory, one session per driver per case.
 """
 
@@ -101,6 +101,15 @@ def describe(payload) -> str:
     kind = payload.get("type", "text")
     if kind == "text":
         return payload.get("text") or ""
+    if kind == "audio":
+        transcript = payload.get("transcript") or {}
+        if transcript.get("text"):
+            return (f"[Voice note from the driver, saved as {payload.get('mediaKey')} and transcribed "
+                    f"automatically ({transcript.get('language') or 'language unknown'}). Treat it as their "
+                    f"own words; record facts from it with evidence_type voice. Transcription can mishear "
+                    f"plates, numbers and street names, so confirm those.]\n{transcript['text']}")
+        return (f"[The driver sent a voice note, saved as {payload.get('mediaKey')}, but it could not be "
+                f"transcribed. Ask them to type what they said or send it again.]")
     if kind == "location":
         return f"[The driver shared a location pin: {payload.get('location')}]"
     if payload.get("mediaKey"):
