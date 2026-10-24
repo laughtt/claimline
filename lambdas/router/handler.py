@@ -144,6 +144,18 @@ def transcribe(msg, media_key) -> dict | None:
     return None
 
 
+def form_reply(msg) -> dict | None:
+    """What the driver sent from the review Flow: {"flow_token", "decision", "comment"}."""
+    interactive = msg.get("interactive") or {}
+    if interactive.get("type") != "nfm_reply":
+        return None
+    try:
+        return json.loads(interactive["nfm_reply"]["response_json"])
+    except (KeyError, ValueError):
+        print(json.dumps({"error": "bad_form_reply", "msgId": msg["id"]}))
+        return None
+
+
 def reply_from_agent(msg, media_key, transcript=None):
     phone = msg["from"] if msg["from"].startswith("+") else f"+{msg['from']}"
     payload = {
@@ -153,6 +165,7 @@ def reply_from_agent(msg, media_key, transcript=None):
         "location": msg.get("location"),
         "mediaKey": media_key,
         "transcript": transcript,
+        "form": form_reply(msg),
         "msgId": msg["id"],
     }
     try:

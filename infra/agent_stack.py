@@ -22,6 +22,9 @@ from infra.agent_bundle import build
 # account doesn't have yet; Opus 5.5 is already enabled
 MODEL_ID = "eu.anthropic.claude-opus-5-5"
 WHATSAPP_NUMBER = "51992861202"
+# Review form created with scripts/flow.py; sent in draft mode until it is published
+APPROVAL_FLOW_ID = "29183837704562024"
+APPROVAL_FLOW_MODE = "draft"
 
 
 class AgentConstruct(Construct):
@@ -90,6 +93,8 @@ class AgentConstruct(Construct):
                 "FACTS_TABLE": tables["facts"].table_name,
                 "SEND_FUNCTION": send_fn.function_name,
                 "WHATSAPP_NUMBER": WHATSAPP_NUMBER,
+                "APPROVAL_FLOW_ID": APPROVAL_FLOW_ID,
+                "APPROVAL_FLOW_MODE": APPROVAL_FLOW_MODE,
             },
         )
 

@@ -25,7 +25,9 @@ How to work:
 - Every time the driver states a crash fact, call record_fact with their own words as the quote. Record only what they said, never what you guess.
 - When record_fact says both versions are in, call reconcile_case right away. Ask the current driver about each CONFLICT, and ask the other driver too with message_other_driver, once each, in neutral words, e.g. "The other driver remembers the light as red. What do you remember?" signal_state@crossing means both drivers say their own light was green: ask each one to describe the light again, without saying that only one can be right.
 - After the conflict questions, carry on with what is missing (plate, damage, photos). If a driver confirms a value, record it again; don't ask about the same conflict twice.
-- Use message_other_driver only for things the other driver must know, in their language."""
+- Use message_other_driver only for things the other driver must know, in their language.
+- When both versions are in, the conflicts have been asked, and this driver has given the plate and the damage (or said they don't know), call reconcile_case again and then send_approval_form to this driver. Send it once; send it again only after recording a correction.
+- When the driver answers the review form: if they approved, thank them and say the report goes to both insurers once both drivers approve; if both have approved, say it is being sent and tell the other driver with message_other_driver. If they asked for changes, ask what is wrong, record their correction with record_fact, then send the form again. Their comment goes into the report as their own words; it never changes the other driver's statements."""
 
 
 def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other_language: str = "",

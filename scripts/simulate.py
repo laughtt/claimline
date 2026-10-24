@@ -65,6 +65,9 @@ class FakeLambda:
 
 
 tools.lambda_ = FakeLambda()
+tools.APPROVAL_FLOW_ID = "sim-flow"
+# Review forms sent, as (role, screen data), for the scenario's checks
+forms_sent = []
 
 PHONES = {"A": "+10000000001", "B": "+10000000002"}
 # What Transcribe detects for each scripted driver
@@ -73,8 +76,12 @@ VOICE_LANGUAGES = {"A": "es-US", "B": "en-US"}
 history = {}
 
 
-def turn(who, text, voice=False):
-    """One inbound message; voice=True sends text as an already transcribed voice note."""
+def turn(who, text, voice=False, form=None):
+    """One inbound message.
+
+    voice=True sends text as an already transcribed voice note; form sends a
+    review form answer {"decision": "approve" | "changes", "comment": "..."}.
+    """
     party, event = cases.resolve_party(PHONES[who], "" if voice else text)
     if party is None:
         print(f"\n### Telefono {who} [sin caso, {event}]: {text}")
@@ -86,7 +93,12 @@ def turn(who, text, voice=False):
     agent = main.build_agent(party, event, msg_id, media_key, messages=history.get(session, []))
     start = len(agent.messages)
     message = text
-    if voice:
+    if form:
+        form = {"flow_token": session, **form}
+        message = main.describe({"type": "interactive", "form": form,
+                                 "approvals": main.record_form(party, form)})
+        text = f"[formulario] {form['decision']} {form.get('comment', '')}".strip()
+    elif voice:
         message = main.describe({"type": "audio", "mediaKey": media_key,
                                  "transcript": {"text": text, "language": VOICE_LANGUAGES[who]}})
     reply = str(agent(message)).strip()
@@ -94,14 +106,25 @@ def turn(who, text, voice=False):
     print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]{' (nota de voz)' if voice else ''}: {text}")
     for m in agent.messages[start:]:
         for block in m["content"]:
-            if "toolUse" in block:
+            if "toolUse" in block and block["toolUse"]["name"] != "send_approval_form":
                 print(f"   [tool] {block['toolUse']['name']} {json.dumps(block['toolUse']['input'], ensure_ascii=False)}")
             if "toolResult" in block and block["toolResult"]["content"]:
                 res = block["toolResult"]["content"][0].get("text", "")
                 if res.startswith("{"):
                     print(f"   [reconcile] {res}")
     while outbox:
-        print(f"   [WhatsApp al otro conductor] {outbox.pop(0)['text']}")
+        sent = outbox.pop(0)
+        if "interactive" in sent:
+            data = sent["interactive"]["action"]["parameters"]["flow_action_payload"]["data"]
+            forms_sent.append((party.role, data))
+            print(f"   [Formulario a {who}] {sent['interactive']['body']['text']} | boton: "
+                  f"{sent['interactive']['action']['parameters']['flow_cta']}")
+            for key in ("heading", "intro", "agreed", "disputed"):
+                print("      " + data[key].replace("\n", "\n      "))
+            print(f"      ( ) {data['options'][0]['title']}  ( ) {data['options'][1]['title']}  "
+                  f"[{data['comment_label']}]  <{data['submit_label']}>")
+        else:
+            print(f"   [WhatsApp al otro conductor] {sent['text']}")
     print(f"<<< Agente a {who}: {reply}")
     return party, reply
 

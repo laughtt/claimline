@@ -18,6 +18,44 @@ lambda_ = boto3.client("lambda")
 
 SEND_FUNCTION = os.environ.get("SEND_FUNCTION", "test-claimline-send")
 HANDOFF_CONTACT = os.environ.get("HANDOFF_CONTACT", "")
+# The static review Flow in flows/approval.json; "draft" until it is published
+APPROVAL_FLOW_ID = os.environ.get("APPROVAL_FLOW_ID", "")
+APPROVAL_FLOW_MODE = os.environ.get("APPROVAL_FLOW_MODE", "published")
+
+
+def approval_flow_message(token: str, heading: str, intro: str, agreed: str, disputed: str, body: str,
+                          cta: str, decision_label: str, approve_label: str, changes_label: str,
+                          comment_label: str, submit_label: str) -> dict:
+    """The interactive flow message; the screen's texts travel in it, so one Flow serves every language.
+
+    Cut to Meta's limits, since a longer field makes WhatsApp reject the whole message.
+    """
+    params = {
+        "flow_message_version": "3",
+        "flow_token": token,
+        "flow_id": APPROVAL_FLOW_ID,
+        "flow_cta": cta[:20],
+        "flow_action": "navigate",
+        "flow_action_payload": {"screen": "REVIEW", "data": {
+            "heading": heading[:80],
+            "intro": intro[:1000],
+            "agreed": agreed[:2000],
+            "disputed": disputed[:1000],
+            "decision_label": decision_label[:30],
+            "options": [{"id": "approve", "title": approve_label[:30]},
+                        {"id": "changes", "title": changes_label[:30]}],
+            "comment_label": comment_label[:20],
+            "submit_label": submit_label[:35],
+        }},
+    }
+    if APPROVAL_FLOW_MODE == "draft":
+        params["mode"] = "draft"
+    return {
+        "type": "flow",
+        "header": {"type": "text", "text": heading[:60]},
+        "body": {"text": body[:1024]},
+        "action": {"name": "flow", "parameters": params},
+    }
 
 
 def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -> list:
@@ -34,7 +72,8 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
                 driver B is about "B"; "the other car ran the light" from
                 driver B is about "A".
             value: Short normalised value in English, e.g. "red", "50",
-                "front left". speed_kmh is a number only. A later call for
+                "front left". speed_kmh is a number only; signal_state is the
+                colour only ("green", "red", "amber"), details stay in quote. A later call for
                 the same field and vehicle replaces the earlier value, so
                 damage_part lists every damaged part of that vehicle in one
                 value, e.g. "right door dented, mirror broken", including
@@ -106,6 +145,55 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
         return f"Sent to driver {other.role}."
 
     @tool
+    def send_approval_form(heading: str, intro: str, agreed: str, disputed: str, disputed_fields: list[str],
+                           body: str, cta: str, decision_label: str, approve_label: str,
+                           changes_label: str, comment_label: str, submit_label: str) -> str:
+        """Send the current driver the draft joint report as a WhatsApp form to review and approve.
+
+        Write every text in the current driver's language, using only facts from
+        reconcile_case. Name each car as "your car" or "the other driver's car".
+
+        Args:
+            heading: Form title with the case code, at most 60 characters.
+            intro: One or two sentences: check the facts; they can add a comment
+                but can't change the other driver's statements.
+            agreed: Markdown. A bold title, then one "- " line per AGREED fact,
+                then the facts only one driver gave, saying which ("only you said",
+                "only the other driver said").
+            disputed: Markdown. A bold title, then one "- " line per CONFLICT
+                with both versions, without saying who is right. If there are
+                none, one line saying so.
+            disputed_fields: The field of every CONFLICT row from reconcile_case,
+                e.g. ["signal_state@crossing"]; empty if there are none.
+            body: The chat bubble above the button, one sentence.
+            cta: Button that opens the form, at most 20 characters.
+            decision_label: Title of the approve/changes choice, at most 30 characters.
+            approve_label: "I approve the report", at most 30 characters.
+            changes_label: "Something is wrong", at most 30 characters.
+            comment_label: Optional comment box label, at most 20 characters.
+            submit_label: Send button, at most 35 characters.
+        """
+        if not APPROVAL_FLOW_ID:
+            return "The review form is not set up. Summarise the facts in a message instead."
+        # Both drivers must see the same disputes; the model has left one out before
+        facts_a, facts_b = cases.load_facts(party.case_id)
+        conflicts = {r.field for r in reconcile(facts_a, facts_b, same_meaning) if r.status == "CONFLICT"}
+        if set(disputed_fields) != conflicts:
+            return (f"Not sent. The CONFLICT facts are {sorted(conflicts) or 'none'}: list exactly those "
+                    f"in disputed and disputed_fields, then call send_approval_form again.")
+        message = approval_flow_message(
+            f"{party.case_id}-{party.role}", heading, intro, agreed, disputed, body, cta,
+            decision_label, approve_label, changes_label, comment_label, submit_label,
+        )
+        lambda_.invoke(
+            FunctionName=SEND_FUNCTION,
+            InvocationType="Event",
+            Payload=json.dumps({"channel": "whatsapp", "to": party.phone, "interactive": message}).encode("utf-8"),
+        )
+        return ("Form sent; it reaches the driver before your reply. Answer with one short sentence "
+                "telling them to open it, nothing more.")
+
+    @tool
     def handoff_human(reason: str) -> str:
         """Hand the case to a person: injury, someone upset or confused, or a request for a human.
 
@@ -116,4 +204,4 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
         contact = HANDOFF_CONTACT or "a claims handler"
         return f"Case marked for a human. Tell the driver that {contact} will contact them."
 
-    return [record_fact, set_language, reconcile_case, message_other_driver, handoff_human]
+    return [record_fact, set_language, reconcile_case, message_other_driver, send_approval_form, handoff_human]

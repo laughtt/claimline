@@ -56,6 +56,8 @@ def invoke(payload, context):
             region_name=REGION,
         )
 
+    if payload.get("form"):
+        payload = {**payload, "approvals": record_form(party, payload["form"])}
     agent = build_agent(party, event, payload.get("msgId"), payload.get("mediaKey"),
                         session_manager=session_manager)
     result = agent(describe(payload))
@@ -85,6 +87,21 @@ def build_agent(party, event, msg_id, media_key, session_manager=None, messages=
     return agent
 
 
+def record_form(party, form) -> dict[str, str] | None:
+    """Save the review form answer in code, not through the model; None for a stale form.
+
+    The flow token is "<case>-<role>", so a form opened before a RESET can't
+    approve the driver's new case.
+    """
+    if form.get("flow_token") != f"{party.case_id}-{party.role}":
+        print(json.dumps({"event": "stale_form", "caseId": party.case_id, "token": form.get("flow_token")}))
+        return None
+    decision = "approve" if form.get("decision") == "approve" else "changes"
+    decisions = cases.set_approval(party, decision, (form.get("comment") or "").strip())
+    print(json.dumps({"event": "form", "caseId": party.case_id, "role": party.role, "approvals": decisions}))
+    return decisions
+
+
 def drop_reasoning(messages) -> None:
     """Strip thinking blocks from history restored out of Memory.
 
@@ -110,6 +127,15 @@ def describe(payload) -> str:
                     f"plates, numbers and street names, so confirm those.]\n{transcript['text']}")
         return (f"[The driver sent a voice note, saved as {payload.get('mediaKey')}, but it could not be "
                 f"transcribed. Ask them to type what they said or send it again.]")
+    if kind == "interactive" and payload.get("form"):
+        form, decisions = payload["form"], payload.get("approvals")
+        if decisions is None:
+            return "[The driver submitted a review form from an earlier case. Ignore it and carry on.]"
+        comment = (form.get("comment") or "").strip()
+        other = next((d for role, d in decisions.items() if role != form["flow_token"][-1]), "not answered yet")
+        return (f"[The driver submitted the review form: {'approved the report' if form.get('decision') == 'approve' else 'asked for changes'}"
+                f"{f', with this comment: {comment}' if comment else ', no comment'}. "
+                f"The other driver's answer: {other}.]")
     if kind == "location":
         return f"[The driver shared a location pin: {payload.get('location')}]"
     if payload.get("mediaKey"):

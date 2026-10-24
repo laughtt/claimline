@@ -24,6 +24,8 @@ TIME_RE = re.compile(r"(\d{1,2})[:.h](\d{2})\s*([ap])?\.?\s*m?\b", re.IGNORECASE
 
 # Derived row: at a crossing both drivers can't have had a green light
 SIGNAL_CROSS = "signal_state@crossing"
+GREEN_RE = re.compile(r"^green\b")
+OTHER_COLOUR_RE = re.compile(r"\b(red|amber|yellow|orange)\b")
 
 
 @dataclass
@@ -100,7 +102,7 @@ def reconcile(
     # Each driver usually only states their own light, so the two greens
     # land in different fields and would never meet above
     own_a, own_b = best_a.get("signal_state@A"), best_b.get("signal_state@B")
-    if own_a and own_b and _normalize(own_a.value) == _normalize(own_b.value) == "green":
+    if own_a and own_b and _is_green(own_a.value) and _is_green(own_b.value):
         result.append(ReconciledFact(
             field=SIGNAL_CROSS,
             status=CONFLICT,
@@ -110,6 +112,12 @@ def reconcile(
             evidence_b=own_b.evidence,
         ))
     return result
+
+
+def _is_green(value: str) -> bool:
+    """ "green" with any detail after it, e.g. "green (had just turned green)", but not "green then amber"."""
+    text = _normalize(value)
+    return bool(GREEN_RE.match(text)) and not OTHER_COLOUR_RE.search(text)
 
 
 def _is_measured(field_name: str) -> bool:

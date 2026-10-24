@@ -171,6 +171,32 @@ def set_language(party: Party, language: str) -> None:
     party.language = language
 
 
+def set_approval(party: Party, decision: str, comment: str) -> dict[str, str]:
+    """Save this driver's answer to the review form; returns every driver's decision so far.
+
+    The comment is the driver's own addition to the report: it never changes
+    the other driver's statements. When both approve, the case is APPROVED.
+    """
+    parties_table.update_item(
+        Key={"caseId": party.case_id, "sk": f"{party.role}#{party.phone_hash}"},
+        UpdateExpression="SET approval = :d, approvalComment = :c, approvedAt = :t",
+        ExpressionAttributeValues={":d": decision, ":c": comment, ":t": int(time.time())},
+    )
+    decisions = approvals(party.case_id)
+    if decisions.get("A") == "approve" and decisions.get("B") == "approve":
+        set_status(party.case_id, "APPROVED")
+    return decisions
+
+
+def approvals(case_id: str) -> dict[str, str]:
+    """Each driver's latest decision on the review form: approve, changes, or absent."""
+    items = parties_table.query(
+        KeyConditionExpression="caseId = :c",
+        ExpressionAttributeValues={":c": case_id},
+    )["Items"]
+    return {i["role"]: i["approval"] for i in items if "role" in i and "approval" in i}
+
+
 def set_status(case_id: str, status: str, reason: str = "") -> None:
     cases_table.update_item(
         Key={"caseId": case_id},

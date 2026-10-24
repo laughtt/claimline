@@ -45,6 +45,14 @@ class ReconcileTest(unittest.TestCase):
         r = by_field(reconcile([Fact("signal_state@A", "green", "A")], [Fact("signal_state@B", "red", "B")]))
         self.assertNotIn(SIGNAL_CROSS, r)
 
+    def test_green_with_details_still_conflicts(self):
+        # What the agent saved when driver B confirmed "it had just turned green"
+        b = [Fact("signal_state@B", "green (had just turned green)", "B")]
+        r = by_field(reconcile([Fact("signal_state@A", "green", "A")], b))
+        self.assertEqual(r[SIGNAL_CROSS].status, CONFLICT)
+        b = [Fact("signal_state@B", "green then amber", "B")]
+        self.assertNotIn(SIGNAL_CROSS, by_field(reconcile([Fact("signal_state@A", "green", "A")], b)))
+
     def test_judge_skips_measured_fields(self):
         judge = lambda field, a, b: True
         r = by_field(reconcile([Fact("speed_kmh@A", "40", "A")], [Fact("speed_kmh@A", "90", "B")], judge))

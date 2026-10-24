@@ -1,0 +1,41 @@
+{
+  "version": "7.0",
+  "screens": [
+    {
+      "id": "REVIEW",
+      "title": "Claimline",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "heading": {"type": "string", "__example__": "Joint crash report JVD3Q9"},
+        "intro": {"type": "string", "__example__": "Check the facts. You can add your own comment, but you can't change the other driver's statements."},
+        "agreed": {"type": "string", "__example__": "**Both drivers agree**\n- Place: Javier Prado and Arequipa\n- Time: 19:40"},
+        "disputed": {"type": "string", "__example__": "**Disputed**\n- Traffic light: each driver says their own light was green"},
+        "decision_label": {"type": "string", "__example__": "Your decision"},
+        "options": {
+          "type": "array",
+          "items": {"type": "object", "properties": {"id": {"type": "string"}, "title": {"type": "string"}}},
+          "__example__": [{"id": "approve", "title": "I approve the report"}, {"id": "changes", "title": "Something is wrong"}]
+        },
+        "comment_label": {"type": "string", "__example__": "Comment (optional)"},
+        "submit_label": {"type": "string", "__example__": "Send"}
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {"type": "TextSubheading", "text": "${data.heading}"},
+          {"type": "TextBody", "text": "${data.intro}"},
+          {"type": "TextBody", "markdown": true, "text": "${data.agreed}"},
+          {"type": "TextBody", "markdown": true, "text": "${data.disputed}"},
+          {"type": "RadioButtonsGroup", "name": "decision", "label": "${data.decision_label}", "data-source": "${data.options}", "required": true},
+          {"type": "TextArea", "name": "comment", "label": "${data.comment_label}", "required": false},
+          {
+            "type": "Footer",
+            "label": "${data.submit_label}",
+            "on-click-action": {"name": "complete", "payload": {"decision": "${form.decision}", "comment": "${form.comment}"}}
+          }
+        ]
+      }
+    }
+  ]
+}
