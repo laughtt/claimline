@@ -159,7 +159,9 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
                 but can't change the other driver's statements.
             agreed: Markdown. A bold title, then one "- " line per AGREED fact,
                 then the facts only one driver gave, saying which ("only you said",
-                "only the other driver said").
+                "only the other driver said"). Leave out any fact a CONFLICT
+                line already covers: with signal_state@crossing, the
+                signal_state rows go only in disputed.
             disputed: Markdown. A bold title, then one "- " line per CONFLICT
                 with both versions, without saying who is right. If there are
                 none, one line saying so. When the other driver speaks about
