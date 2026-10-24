@@ -1,4 +1,4 @@
-Retomamos Claimline, nuestro proyecto para el hackathon AWS CDS Agentic AI. Responde siempre en español. Este es el estado a 23 de octubre de 2026.
+Retomamos Claimline, nuestro proyecto para el hackathon AWS CDS Agentic AI. Responde siempre en español. Este es el estado a 24 de octubre de 2026.
 
 ## Qué es
 Claimline es un agente de IA que tramita partes de accidente de coche por WhatsApp. La entrega es el martes 27 de octubre de 2026 y la demo se graba el domingo 25.
@@ -16,7 +16,7 @@ Claimline es un agente de IA que tramita partes de accidente de coche por WhatsA
 - El documento de progreso está en https://claude.ai/artifact/1DG1XZwqSG9u4JArTMxTkD.
 
 ## Dónde está
-- Repo local en `D:\proyectos\claimline`. GitHub privado: https://github.com/jorgeantonio-gif/claimline, rama `main`, último commit `c54200e`.
+- Repo local en `D:\proyectos\claimline`. GitHub privado: https://github.com/jorgeantonio-gif/claimline, rama `main`, último commit `97606aa`.
 - Cuenta AWS compartida 888564397690, perfil de CLI `test`, región **eu-west-1**.
 - Número de WhatsApp: +51 992 861 202, con `phone-number-id-8cf9d74a3a8a484582764cb617547642` y `waba-5172958319fc498bb36706462f967d41`.
 
@@ -48,10 +48,12 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 | `lambdas/router`, `lambdas/send` | Entrada de mensajes y único punto de envío |
 | `infra/core_stack.py`, `infra/agent_stack.py` | La pila de CDK, con el agente como construct dentro de core |
 | `scripts/simulate.py` | Simula al conductor A (español) y al B (inglés) con Claude real y DynamoDB y WhatsApp en memoria; no toca AWS |
-| `tests/test_reconcile.py` | 8 tests |
+| `scripts/simulate_voice.py` | El mismo guion casi entero por notas de voz, escritas como las devuelve Transcribe |
+| `tests/test_reconcile.py`, `tests/test_transcribe.py` | 12 tests (reconciliación y transcripción con Transcribe y S3 simulados) |
 
 ## Estado
 - BothSides funciona de punta a punta con dos móviles reales (caso ZM4X65, 23 de octubre). El orden fue: RESET, JOIN, la versión de cada uno, comparación automática, y la pregunta del semáforo enviada una sola vez a cada conductor, sin culpar a nadie. Una captura del chat de A lo confirma.
+- Notas de voz (24 de octubre, probado con móvil real): el router copia el audio a S3, lanza un trabajo de Transcribe `test-claimline-<hash>` (OGG/Opus directo, detecta es-US o en-US, unos 12 s) y pasa el texto al agente, que guarda los hechos con `evidence_type=voice`. La transcripción queda en `transcripts/` del bucket de medios. Si falla, el agente pide escribirlo.
 - Desde cualquier teléfono, `RESET` (la palabra exacta) lo desvincula de su caso. El siguiente mensaje abre un caso nuevo, así que se puede ensayar con los mismos móviles.
 - Un `JOIN` con un código que no existe, desde un teléfono sin caso, responde con un texto fijo y no abre ningún caso.
 
@@ -59,6 +61,8 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 - Bedrock rechaza los bloques de razonamiento restaurados de Memory, porque el system prompt cambia entre turnos. Por eso existe `drop_reasoning()`.
 - Las sesiones de AgentCore siguen ejecutando el código viejo hasta 15 minutos de inactividad. Por eso la sesión lleva la versión del Runtime.
 - El juez necesita `maxTokens` alto (1024), porque Opus razona antes de contestar.
+- `GetWhatsAppMessageMedia` usa la key como prefijo y añade `<mediaId>.<ext>`; el router busca el objeto real con `list_objects_v2`.
+- `damage_part` guarda un valor por vehículo: el agente junta todas las piezas dañadas en uno.
 - Con "usted", "su vehículo" es ambiguo. El prompt obliga a decir "su propio vehículo" o "el vehículo del otro conductor".
 
 ## Cómo trabajar
@@ -71,11 +75,10 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 Desde Git Bash, usar `MSYS_NO_PATHCONV=1` en los comandos de `aws logs`. El bucket de medios es RETAIN: si falla un primer despliegue, queda huérfano y hay que borrarlo.
 
 ## Pendiente
-1. Notas de voz: transcribirlas con Transcribe (probar OGG/Opus directo) para que el conductor cuente su versión hablando.
-2. Informe en PDF y envío por SES a las dos aseguradoras. Falta que el compañero verifique en SES un dominio o los correos de prueba.
-3. WhatsApp Flow de aprobación (primero estático).
-4. Guardrails y traspaso a humano completo.
-5. Actualizar la spec (eu-west-1, perfil `test`, "ALTA" en First Call), el README final, JUDGE_TEST.md, ORIGINAL_WORK.md y el diagrama de arquitectura.
-6. Tareas del compañero: correos de SES, alerta de presupuesto de unos $50, rotar la access key que se compartió en el PDF y activar MFA en el usuario `test`.
+1. Informe en PDF y envío por SES a las dos aseguradoras. Falta que el compañero verifique en SES un dominio o los correos de prueba.
+2. WhatsApp Flow de aprobación (primero estático).
+3. Guardrails y traspaso a humano completo.
+4. Actualizar la spec (eu-west-1, perfil `test`, "ALTA" en First Call), el README final, JUDGE_TEST.md, ORIGINAL_WORK.md y el diagrama de arquitectura.
+5. Tareas del compañero: correos de SES, alerta de presupuesto de unos $50, rotar la access key que se compartió en el PDF y activar MFA en el usuario `test`.
 
 Empieza leyendo el documento de progreso y `git log`. Comprueba `aws sts get-caller-identity --profile test` y dime el siguiente paso.
