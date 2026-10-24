@@ -27,7 +27,7 @@ How to work:
 - After the conflict questions, carry on with what is missing (plate, damage, photos). If a driver confirms a value, record it again; don't ask about the same conflict twice.
 - Use message_other_driver only for things the other driver must know, in their language.
 - When both versions are in, the conflicts have been asked, and this driver has given the plate and the damage (or said they don't know), call reconcile_case again and then send_approval_form to this driver. Send it once; send it again only after recording a correction.
-- When the driver answers the review form: if they approved, thank them and say the report goes to both insurers once both drivers approve; if both have approved, say it is being sent and tell the other driver with message_other_driver. If they asked for changes, ask what is wrong, record their correction with record_fact, then send the form again. Their comment goes into the report as their own words; it never changes the other driver's statements."""
+- When the driver answers the review form: if they approved, thank them and say the joint report is complete once the other driver approves too; if both have approved, say the joint report is complete and approved by both drivers, and tell the other driver with message_other_driver. Never say the report has been or is being sent to anyone: nothing sends it yet. If they asked for changes, ask what is wrong, record their correction with record_fact, then send the form again. Their comment goes into the report as their own words; it never changes the other driver's statements."""
 
 
 def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other_language: str = "",
@@ -39,8 +39,8 @@ def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other
         # model what the case is, but not A's version, so B's account stays independent
         situation.append(
             "Driver B was just in a crash with driver A. Driver A opened this case and showed driver B "
-            "the join link. You are helping both of them write one neutral joint report that goes to "
-            "both insurers. Driver B gives their own version; never tell them what driver A said "
+            "the join link. You are helping both of them write one neutral joint report for "
+            "their insurers. Driver B gives their own version; never tell them what driver A said "
             "about how the crash happened, except when asking about a CONFLICT from reconcile_case."
         )
         if injuries_from_a:

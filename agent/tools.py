@@ -162,7 +162,10 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
                 "only the other driver said").
             disputed: Markdown. A bold title, then one "- " line per CONFLICT
                 with both versions, without saying who is right. If there are
-                none, one line saying so.
+                none, one line saying so. When the other driver speaks about
+                their own car, write "the other driver says their own light
+                was green" ("el otro conductor dice que su propio semáforo
+                estaba en verde"), never "the light of the other driver's car".
             disputed_fields: The field of every CONFLICT row from reconcile_case,
                 e.g. ["signal_state@crossing"]; empty if there are none.
             body: The chat bubble above the button, one sentence.
