@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claimline · Prototipo local</title>
+<style>
+:root {
+  --bg: #eef0ec; --surface: #ffffff; --ink: #1c1d1b; --muted: #62645e; --line: #dcdfd8;
+  --accent: #0f6e56; --accent-soft: #dff1e9; --chat: #e9e4da; --mine: #d7f5c9; --theirs: #ffffff;
+  --warn: #9a5b00; --warn-soft: #fbefdc; --bad: #a3312a; --bad-soft: #f8e4e2; --code: #f1f1ed;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121412; --surface: #1d201d; --ink: #e9ebe6; --muted: #a3a69e; --line: #333731;
+    --accent: #4fc39d; --accent-soft: #163428; --chat: #171a17; --mine: #1f4632; --theirs: #262a26;
+    --warn: #e2a74d; --warn-soft: #3a2a12; --bad: #ec8279; --bad-soft: #3d1c19; --code: #272a26;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121412; --surface: #1d201d; --ink: #e9ebe6; --muted: #a3a69e; --line: #333731;
+  --accent: #4fc39d; --accent-soft: #163428; --chat: #171a17; --mine: #1f4632; --theirs: #262a26;
+  --warn: #e2a74d; --warn-soft: #3a2a12; --bad: #ec8279; --bad-soft: #3d1c19; --code: #272a26;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button { font: inherit; cursor: pointer; }
+code { font: 0.85em ui-monospace, Consolas, monospace; background: var(--code); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+header.top h1 { font-size: 1.15rem; margin: 0; }
+.badge { font-size: 0.78rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+header.top p { margin: 0; color: var(--muted); font-size: 0.88rem; flex: 1 1 320px; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.diagram { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 12px 16px 0; }
+.node { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 10px; font-size: 0.82rem; transition: background .2s, border-color .2s; }
+.node b { display: block; font-size: 0.86rem; }
+.node small { color: var(--muted); }
+.node.active { background: var(--accent-soft); border-color: var(--accent); }
+.arrow { color: var(--muted); }
+.layout { display: grid; gap: 14px; padding: 14px 16px 24px; grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.15fr) minmax(300px, 1fr); align-items: start; }
+@media (max-width: 1100px) { .layout { grid-template-columns: 1fr 1fr; } .middle { grid-column: 1 / -1; order: 3; } }
+@media (max-width: 700px) { .layout { grid-template-columns: 1fr; } .diagram .arrow { display: none; } }
+.phone { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; height: 78vh; min-height: 520px; }
+.phone-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--accent); color: #fff; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.25); display: grid; place-items: center; font-weight: 700; }
+.phone-head small { display: block; opacity: .85; font-size: 0.78rem; }
+.typing { margin-left: auto; font-size: 0.78rem; opacity: 0; transition: opacity .2s; }
+.typing.on { opacity: 1; }
+.chat { flex: 1; overflow-y: auto; background: var(--chat); padding: 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.bubble { max-width: 86%; padding: 7px 10px; border-radius: 10px; font-size: 0.92rem; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 1px 0 rgba(0,0,0,.06); }
+.bubble.in { align-self: flex-end; background: var(--mine); }
+.bubble.out { align-self: flex-start; background: var(--theirs); }
+.bubble .meta { display: flex; gap: 8px; align-items: center; justify-content: flex-end; color: var(--muted); font-size: 0.72rem; margin-top: 2px; }
+.bubble audio { width: 230px; max-width: 100%; height: 34px; display: block; }
+.bubble .transcript { font-size: 0.82rem; color: var(--muted); font-style: italic; margin-top: 4px; }
+.speak { border: 0; background: none; color: var(--muted); padding: 0; font-size: 0.85rem; }
+.formcard { white-space: normal; }
+.formcard b { display: block; }
+.formcard .cta { display: block; width: 100%; margin-top: 8px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--accent); font-weight: 600; padding-top: 7px; }
+.composer { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--line); background: var(--surface); }
+.composer input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 18px; padding: 7px 12px; background: var(--bg); color: var(--ink); font: inherit; }
+.round { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 1rem; flex: none; }
+.round.rec { background: var(--bad); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .6; } }
+details.script { border-top: 1px solid var(--line); background: var(--surface); font-size: 0.85rem; }
+details.script summary { padding: 7px 12px; cursor: pointer; color: var(--muted); }
+.lines { max-height: 190px; overflow-y: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 5px; }
+.line { display: flex; gap: 6px; align-items: flex-start; }
+.line span { flex: 1; }
+.line button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 1px 7px; font-size: 0.78rem; white-space: nowrap; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.card h2 { font-size: 0.95rem; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+.card h2 small { color: var(--muted); font-weight: 400; }
+.log { max-height: 34vh; overflow-y: auto; font-size: 0.83rem; display: flex; flex-direction: column; gap: 4px; }
+.step { display: grid; grid-template-columns: 22px 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: 0; }
+.who { font-weight: 700; font-size: 0.72rem; border-radius: 4px; text-align: center; height: 18px; line-height: 18px; background: var(--accent-soft); color: var(--accent); }
+.who.B { background: var(--warn-soft); color: var(--warn); }
+.step .what { overflow-wrap: anywhere; }
+.step .what b { font-weight: 600; }
+.step .detail { color: var(--muted); }
+.step.error .what { color: var(--bad); }
+.status { font-size: 0.78rem; font-weight: 600; padding: 1px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.status.HANDOFF { background: var(--bad-soft); color: var(--bad); }
+.status.OPEN { background: var(--warn-soft); color: var(--warn); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; }
+.st { font-weight: 600; font-size: 0.72rem; }
+.st.AGREED { color: var(--accent); } .st.CONFLICT { color: var(--bad); } .st.ONLY_A, .st.ONLY_B { color: var(--warn); }
+.empty { color: var(--muted); font-size: 0.85rem; }
+dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(440px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+.flow-head { background: var(--accent); color: #fff; padding: 10px 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.flow-head button { background: none; border: 0; color: #fff; font-size: 1.1rem; }
+.flow-body { padding: 14px; max-height: 70vh; overflow-y: auto; font-size: 0.9rem; }
+.flow-body h3 { margin: 0 0 8px; font-size: 1rem; }
+.flow-body ul { padding-left: 18px; margin: 4px 0 10px; }
+.flow-body label { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.flow-body textarea { width: 100%; min-height: 70px; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+.flow-foot { padding: 0 14px 14px; }
+.flow-foot button { width: 100%; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Claimline · BothSides</h1>
+  <span class="badge" id="mode">WHATSAPP_ON=0 · prototipo local</span>
+  <p>Dos "móviles" en el navegador hablan con el mismo agente, herramientas y conciliación que la versión desplegada, con Claude real. Solo cambian los extremos: esta web en lugar de WhatsApp, ElevenLabs en lugar de Transcribe y tablas en memoria en lugar de DynamoDB.</p>
+  <button class="btn" id="reset">Reiniciar todo</button>
+</header>
+
+<div class="diagram" aria-label="Pipeline">
+  <span class="node" data-node="in"><b>Entrada</b><small>web (WhatsApp)</small></span><span class="arrow">→</span>
+  <span class="node" data-node="voice"><b>Voz</b><small>ElevenLabs (Transcribe)</small></span><span class="arrow">→</span>
+  <span class="node" data-node="agent"><b>Agente</b><small>Claude · Strands</small></span><span class="arrow">→</span>
+  <span class="node" data-node="tool"><b>Herramientas</b><small>hechos · conciliación</small></span><span class="arrow">→</span>
+  <span class="node" data-node="out"><b>Salida</b><small>canal web (Lambda send)</small></span>
+</div>
+
+<div class="layout">
+  <section class="phone" data-who="A">
+    <div class="phone-head"><span class="avatar">A</span><div>Conductor A<small>+1 000 000 0001 · español</small></div><span class="typing">escribiendo…</span></div>
+    <div class="chat"></div>
+    <details class="script" open><summary>Guion de demo</summary><div class="lines"></div></details>
+    <form class="composer"><input placeholder="Mensaje" autocomplete="off"><button type="button" class="round mic" title="Grabar nota de voz">🎤</button><button class="round" title="Enviar">➤</button></form>
+  </section>
+
+  <section class="middle">
+    <div class="card"><h2>Pipeline <small>cada paso de cada mensaje</small></h2><div class="log" id="log"><div class="empty">Escribe o manda una nota de voz desde el conductor A para abrir un caso.</div></div></div>
+    <div class="card"><h2>Caso <span id="caseid"></span> <span class="status OPEN" id="status" hidden></span></h2><div id="casebody" class="empty">Todavía no hay caso.</div></div>
+  </section>
+
+  <section class="phone" data-who="B">
+    <div class="phone-head"><span class="avatar">B</span><div>Conductor B<small>+1 000 000 0002 · english</small></div><span class="typing">typing…</span></div>
+    <div class="chat"></div>
+    <details class="script" open><summary>Demo script</summary><div class="lines"></div></details>
+    <form class="composer"><input placeholder="Message" autocomplete="off"><button type="button" class="round mic" title="Record a voice note">🎤</button><button class="round" title="Send">➤</button></form>
+  </section>
+</div>
+
+<dialog id="flow">
+  <div class="flow-head"><span id="flow-title"></span><button type="button" id="flow-close" aria-label="Cerrar">✕</button></div>
+  <form id="flow-form">
+    <div class="flow-body" id="flow-body"></div>
+    <div class="flow-foot"><button class="btn primary" id="flow-submit"></button></div>
+  </form>
+</dialog>
+
+<script>
+// Each line: [text, voice?]. Plates are typed, as the agent asks
+const SCRIPT = {
+  A: [
+    ["Hola, acabo de tener un choque con otro coche en un cruce.", true],
+    ["No, nadie está herido, solo daños en los coches.", true],
+    ["Fue en el cruce de la avenida Javier Prado con la avenida Arequipa, a las siete y cuarenta de la noche. Yo iba a unos cuarenta kilómetros por hora y mi semáforo estaba en verde. El otro coche me chocó en la puerta delantera derecha.", true],
+    ["Estoy seguro, el semáforo estaba en verde cuando entré al cruce.", true],
+    ["Mi coche tiene la puerta derecha hundida y el espejo roto.", true],
+    ["ABC-123", false],
+    ["Eso es todo.", true],
+    ["RESET", false],
+  ],
+  B: [
+    ["JOIN {code}", false],
+    ["No, nobody is hurt.", true],
+    ["It happened at Javier Prado and Arequipa, around seven forty PM. My light was green. I was going about thirty kilometers per hour, and I hit the other car on its front right door.", true],
+    ["I'm sure, it had just turned green when I went through.", true],
+    ["My front bumper is cracked and the left headlight is broken.", true],
+    ["My plate is ABC-123 and the other car's plate is XYZ-456", false],
+    ["That's all.", true],
+    ["RESET", false],
+  ],
+};
+const STAGES = {
+  media: ["voice", "Nota de voz recibida"], tts: ["voice", "Voz de ejemplo generada"],
+  transcribe: ["voice", "Transcripción"], agent: ["agent", "Agente pensando"],
+  agent_done: ["agent", "Agente terminó"], tool: ["tool", "Herramienta"],
+  deliver: ["out", "Envío"], error: ["agent", "Error"],
+};
+let last = 0, caseId = "", lastReconciled = null;
+const $ = (s, el = document) => el.querySelector(s);
+const phone = who => $(`.phone[data-who="${who}"]`);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const time = () => new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+
+function md(text) {
+  // The form's markdown: **bold** and "- " list lines
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").split("\n");
+  let html = "", list = false;
+  for (const l of lines) {
+    if (l.startsWith("- ")) { if (!list) { html += "<ul>"; list = true; } html += `<li>${l.slice(2)}</li>`; }
+    else { if (list) { html += "</ul>"; list = false; } if (l.trim()) html += `<div>${l}</div>`; }
+  }
+  return html + (list ? "</ul>" : "");
+}
+
+function bubble(who, dir, inner, cls = "") {
+  const chat = $(".chat", phone(who));
+  const div = document.createElement("div");
+  div.className = `bubble ${dir} ${cls}`;
+  div.innerHTML = inner;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function addMessage(e) {
+  if (e.audio) {
+    bubble(e.who, e.dir, `<audio controls src="${esc(e.audio)}"></audio><div class="transcript" data-audio="${esc(e.audio)}">transcribiendo…</div><div class="meta">🎤 ${time()}</div>`);
+    return;
+  }
+  const speak = e.dir === "out" ? `<button class="speak" title="Escuchar">🔊</button>` : "";
+  const el = bubble(e.who, e.dir, `${esc(e.text)}<div class="meta">${e.form ? "📋 formulario · " : ""}${speak}${time()}</div>`);
+  const btn = $(".speak", el);
+  if (btn) btn.onclick = () => play(e.text, btn);
+  const code = e.dir === "out" && (e.text || "").match(/JOIN[ %20]+([A-Z0-9]{6})/);
+  if (code) { caseId = code[1]; renderScript("B"); }
+}
+
+function addForm(e) {
+  const i = e.interactive, data = i.action.parameters.flow_action_payload.data;
+  const el = bubble(e.who, "out", `<b>${esc(i.header.text)}</b>${esc(i.body.text)}<button class="cta">${esc(i.action.parameters.flow_cta)}</button>`, "formcard");
+  $(".cta", el).onclick = () => openForm(e.who, i.action.parameters.flow_token, data);
+}
+
+function openForm(who, token, d) {
+  $("#flow-title").textContent = d.heading;
+  $("#flow-body").innerHTML = `<p>${esc(d.intro)}</p>${md(d.agreed)}${md(d.disputed)}
+    <h3>${esc(d.decision_label)}</h3>
+    ${d.options.map((o, n) => `<label><input type="radio" name="decision" value="${esc(o.id)}" ${n ? "" : "required"}> ${esc(o.title)}</label>`).join("")}
+    <h3>${esc(d.comment_label)}</h3><textarea name="comment"></textarea>`;
+  $("#flow-submit").textContent = d.submit_label;
+  const form = $("#flow-form");
+  form.onsubmit = ev => {
+    ev.preventDefault();
+    const f = new FormData(form);
+    post("/api/message", {who, form: {flow_token: token, decision: f.get("decision"), comment: f.get("comment") || ""}});
+    $("#flow").close();
+  };
+  $("#flow").showModal();
+}
+
+function addStep(e) {
+  const [node, label] = STAGES[e.stage] || ["agent", e.stage];
+  highlight(node);
+  const log = $("#log");
+  if (log.firstElementChild?.classList.contains("empty")) log.innerHTML = "";
+  let what = `<b>${label}</b>`, detail = e.detail || "";
+  if (e.stage === "tool") {
+    what = `<b>${esc(e.tool)}</b>`;
+    detail = e.tool === "reconcile_case" ? "compara las dos versiones en código" : JSON.stringify(e.input);
+    if (e.result && !e.result.startsWith("{")) detail += ` → ${e.result}`;
+  }
+  log.insertAdjacentHTML("beforeend", `<div class="step ${e.stage === "error" ? "error" : ""}"><span class="who ${esc(e.who)}">${esc(e.who || "·")}</span><div class="what">${what} <span class="detail">${esc(detail)}</span></div></div>`);
+  log.scrollTop = log.scrollHeight;
+}
+
+let hl;
+function highlight(node) {
+  document.querySelectorAll(".node").forEach(n => n.classList.toggle("active", n.dataset.node === node));
+  clearTimeout(hl);
+  hl = setTimeout(() => document.querySelectorAll(".node").forEach(n => n.classList.remove("active")), 2500);
+}
+
+function renderCase(c) {
+  if (c.reconciled) lastReconciled = c.reconciled;
+  $("#caseid").textContent = c.caseId;
+  const st = $("#status");
+  st.hidden = false; st.className = `status ${c.status}`; st.textContent = c.status;
+  const appr = ["A", "B"].map(r => `${r}: ${c.approvals[r] === "approve" ? "aprobó" : c.approvals[r] === "changes" ? "pidió cambios" : "—"}`).join(" · ");
+  const facts = c.facts.length ? `<div class="table-wrap"><table><tr><th>Dice</th><th>Hecho</th><th>Valor</th><th>Prueba</th></tr>${c.facts.map(f =>
+      `<tr><td>${esc(f.by)}</td><td><code>${esc(f.field)}</code></td><td>${esc(f.value)}</td><td title="${esc(f.quote)}">${f.evidence === "voice" ? "🎤" : "✍"} ${esc(f.quote).slice(0, 60)}</td></tr>`).join("")}</table></div>` : `<div class="empty">Sin hechos todavía.</div>`;
+  const rec = lastReconciled ? `<div class="table-wrap"><table><tr><th>Hecho</th><th>Estado</th><th>A</th><th>B</th></tr>${lastReconciled.map(r =>
+      `<tr><td><code>${esc(r.field)}</code></td><td class="st ${esc(r.status)}">${esc(r.status)}</td><td>${esc(r.driver_A ?? "—")}</td><td>${esc(r.driver_B ?? "—")}</td></tr>`).join("")}</table></div>` : `<div class="empty">Se calcula cuando los dos han dado su versión.</div>`;
+  $("#casebody").className = "";
+  $("#casebody").innerHTML = `<p class="empty">Aprobaciones: ${appr}${c.statusReason ? ` · ${esc(c.statusReason)}` : ""}</p>
+    <h2>Hechos guardados</h2>${facts}<h2 style="margin-top:12px">Conciliación <small>código, no el modelo</small></h2>${rec}`;
+}
+
+function handle(e) {
+  if (e.kind === "msg") addMessage(e);
+  else if (e.kind === "form") addForm(e);
+  else if (e.kind === "transcript") { const t = document.querySelector(`.transcript[data-audio="${CSS.escape(e.audio)}"]`); if (t) t.textContent = `«${e.text}»`; }
+  else if (e.kind === "typing") $(".typing", phone(e.who)).classList.toggle("on", e.on);
+  else if (e.kind === "stage") addStep(e);
+  else if (e.kind === "case") renderCase(e);
+  else if (e.kind === "reset") resetView();
+  if (e.kind === "stage" && (e.stage === "media" || e.stage === "tts") || e.kind === "msg" && e.dir === "in") highlight("in");
+}
+
+function resetView() {
+  document.querySelectorAll(".chat").forEach(c => c.innerHTML = "");
+  $("#log").innerHTML = `<div class="empty">Reiniciado. Empieza otra vez desde el conductor A.</div>`;
+  $("#casebody").className = "empty"; $("#casebody").textContent = "Todavía no hay caso.";
+  $("#caseid").textContent = ""; $("#status").hidden = true;
+  caseId = ""; lastReconciled = null; renderScript("B");
+}
+
+async function poll() {
+  while (true) {
+    try {
+      const r = await fetch(`/api/events?after=${last}`);
+      const data = await r.json();
+      for (const e of data.events) { last = e.id; handle(e); }
+    } catch { await new Promise(r => setTimeout(r, 2000)); }
+  }
+}
+
+function post(url, body) {
+  return fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+}
+
+async function play(text, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/speak", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text, voice: "agent"})});
+    if (r.ok) new Audio(URL.createObjectURL(await r.blob())).play();
+  } finally { btn.disabled = false; }
+}
+
+function renderScript(who) {
+  const box = $(".lines", phone(who));
+  box.innerHTML = "";
+  for (const [raw, voice] of SCRIPT[who]) {
+    const text = raw.replace("{code}", caseId || "······");
+    const row = document.createElement("div");
+    row.className = "line";
+    row.innerHTML = `<span>${esc(text)}</span>${voice ? `<button data-v="1">🎙 voz</button>` : ""}<button>✍ texto</button>`;
+    row.querySelectorAll("button").forEach(b => b.onclick = () => {
+      if (text.includes("······")) return alert("Primero A tiene que abrir el caso y recibir el código JOIN.");
+      post("/api/message", b.dataset.v ? {who, text, voice: true} : {who, text});
+    });
+    box.appendChild(row);
+  }
+}
+
+for (const who of ["A", "B"]) {
+  const p = phone(who), input = $("input", p);
+  $(".composer", p).onsubmit = ev => {
+    ev.preventDefault();
+    if (!input.value.trim()) return;
+    post("/api/message", {who, text: input.value.trim()});
+    input.value = "";
+  };
+  let rec = null;
+  $(".mic", p).onclick = async ev => {
+    const btn = ev.currentTarget;
+    if (rec) { rec.stop(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+      rec = new MediaRecorder(stream, mime ? {mimeType: mime} : {});
+      const chunks = [];
+      rec.ondataavailable = d => chunks.push(d.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        btn.classList.remove("rec"); btn.textContent = "🎤";
+        const blob = new Blob(chunks, {type: rec.mimeType || "audio/webm"});
+        rec = null;
+        await fetch(`/api/voice?who=${who}`, {method: "POST", headers: {"Content-Type": blob.type}, body: blob});
+      };
+      rec.start();
+      btn.classList.add("rec"); btn.textContent = "■";
+    } catch (err) { alert("No se pudo usar el micrófono: " + err.message); }
+  };
+  renderScript(who);
+}
+$("#reset").onclick = () => { if (confirm("¿Borrar el caso y las conversaciones?")) post("/api/reset", {}); };
+$("#flow-close").onclick = () => $("#flow").close();
+poll();
+</script>
+</body>
+</html>

@@ -7,7 +7,6 @@ Usage, from the repo root: .venv\\Scripts\\python scripts\\simulate.py
 
 import json
 import os
-import re
 import sys
 
 os.environ.setdefault("AWS_PROFILE", "test")
@@ -17,54 +16,20 @@ os.environ["MEMORY_ID"] = ""
 os.environ["MODEL_ID"] = "eu.anthropic.claude-opus-5-5"
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from botocore.exceptions import ClientError  # noqa: E402
+from agent import cases, channel, main, tools  # noqa: E402
+from pipeline import memory_store  # noqa: E402
 
-from agent import cases, main, tools  # noqa: E402
-
-
-class FakeTable:
-    def __init__(self, keys):
-        self.keys, self.items = keys, {}
-
-    def _k(self, item):
-        return tuple(item[k] for k in self.keys)
-
-    def get_item(self, Key):
-        item = self.items.get(self._k(Key))
-        return {"Item": dict(item)} if item else {}
-
-    def put_item(self, Item, ConditionExpression=None):
-        if ConditionExpression and self._k(Item) in self.items:
-            raise ClientError({"Error": {"Code": "ConditionalCheckFailedException"}}, "PutItem")
-        self.items[self._k(Item)] = dict(Item)
-
-    def query(self, KeyConditionExpression, ExpressionAttributeValues):
-        c = ExpressionAttributeValues[":c"]
-        return {"Items": [dict(i) for i in self.items.values() if i["caseId"] == c]}
-
-    def update_item(self, Key, UpdateExpression, ExpressionAttributeValues, ExpressionAttributeNames=None):
-        names = ExpressionAttributeNames or {}
-        item = self.items.setdefault(self._k(Key), dict(Key))
-        for name, value in re.findall(r"([#\w]+)\s*=\s*(:\w+)", UpdateExpression):
-            item[names.get(name, name)] = ExpressionAttributeValues[value]
-
-    def delete_item(self, Key):
-        self.items.pop(self._k(Key), None)
-
-
-cases.cases_table = FakeTable(["caseId"])
-cases.parties_table = FakeTable(["caseId", "sk"])
-cases.facts_table = FakeTable(["caseId", "factId"])
+memory_store.install()
 
 outbox = []
 
 
-class FakeLambda:
-    def invoke(self, FunctionName, InvocationType, Payload):
-        outbox.append(json.loads(Payload))
+class FakeChannel:
+    def send(self, to, text=None, interactive=None):
+        outbox.append({"to": to, "interactive": interactive} if interactive else {"to": to, "text": text})
 
 
-tools.lambda_ = FakeLambda()
+channel.use(FakeChannel())
 tools.APPROVAL_FLOW_ID = "sim-flow"
 # Review forms sent, as (role, screen data), for the scenario's checks
 forms_sent = []

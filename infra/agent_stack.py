@@ -95,6 +95,8 @@ class AgentConstruct(Construct):
                 "WHATSAPP_NUMBER": WHATSAPP_NUMBER,
                 "APPROVAL_FLOW_ID": APPROVAL_FLOW_ID,
                 "APPROVAL_FLOW_MODE": APPROVAL_FLOW_MODE,
+                # Outbound through the send Lambda; the local prototype runs with 0
+                "WHATSAPP_ON": "1",
             },
         )
 

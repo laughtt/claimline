@@ -30,6 +30,9 @@ FIXED_REPLIES = {
                  "That case already has two drivers.",
 }
 
+# Without AgentCore Memory (the local prototype), history stays in this process
+LOCAL_HISTORY: dict[str, list] = {}
+
 app = BedrockAgentCoreApp()
 model = BedrockModel(model_id=MODEL_ID, region_name=REGION)
 
@@ -58,10 +61,16 @@ def invoke(payload, context):
 
     if payload.get("form"):
         payload = {**payload, "review": record_form(party, payload["form"])}
+    session = f"{party.case_id}-{party.role}"
     agent = build_agent(party, event, payload.get("msgId"), payload.get("mediaKey"),
-                        session_manager=session_manager)
+                        session_manager=session_manager,
+                        messages=None if session_manager else LOCAL_HISTORY.get(session))
+    start = len(agent.messages)
     result = agent(describe(payload))
-    return {"reply": str(result).strip(), "caseId": party.case_id, "role": party.role, "event": event}
+    if not session_manager:
+        LOCAL_HISTORY[session] = agent.messages
+    return {"reply": str(result).strip(), "caseId": party.case_id, "role": party.role, "event": event,
+            "tools": tool_calls(agent.messages[start:])}
 
 
 def build_agent(party, event, msg_id, media_key, session_manager=None, messages=None) -> Agent:
@@ -105,6 +114,20 @@ def record_form(party, form) -> dict | None:
     print(json.dumps({"event": "form", "caseId": party.case_id, "role": party.role, "approvals": decisions,
                       "handoff": handoff}))
     return {"approvals": decisions, "handoff": handoff}
+
+
+def tool_calls(messages) -> list[dict]:
+    """The tools one turn called and what each returned, for the logs and the local prototype."""
+    results = {block["toolResult"]["toolUseId"]: block["toolResult"]["content"]
+               for m in messages for block in m["content"] if "toolResult" in block}
+    calls = []
+    for m in messages:
+        for block in m["content"]:
+            if "toolUse" in block:
+                use = block["toolUse"]
+                content = results.get(use["toolUseId"]) or [{}]
+                calls.append({"name": use["name"], "input": use["input"], "result": content[0].get("text", "")})
+    return calls
 
 
 def drop_reasoning(messages) -> None:

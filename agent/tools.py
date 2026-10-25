@@ -7,16 +7,12 @@ and can't touch another case.
 import json
 import os
 
-import boto3
 from strands import tool
 
-from agent import cases
+from agent import cases, channel
 from agent.judge import same_meaning
 from agent.reconcile import reconcile
 
-lambda_ = boto3.client("lambda")
-
-SEND_FUNCTION = os.environ.get("SEND_FUNCTION", "test-claimline-send")
 HANDOFF_CONTACT = os.environ.get("HANDOFF_CONTACT", "")
 # The static review Flow in flows/approval.json; "draft" until it is published
 APPROVAL_FLOW_ID = os.environ.get("APPROVAL_FLOW_ID", "")
@@ -136,11 +132,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
         other = cases.other_party(party)
         if not other:
             return "The other driver has not joined yet."
-        lambda_.invoke(
-            FunctionName=SEND_FUNCTION,
-            InvocationType="Event",
-            Payload=json.dumps({"channel": "whatsapp", "to": other.phone, "text": text}).encode("utf-8"),
-        )
+        channel.current().send(other.phone, text=text)
         cases.add_note(other, text)
         return f"Sent to driver {other.role}."
 
@@ -195,11 +187,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             f"{party.case_id}-{party.role}", heading, intro, agreed, disputed, body, cta,
             decision_label, approve_label, changes_label, comment_label, submit_label,
         )
-        lambda_.invoke(
-            FunctionName=SEND_FUNCTION,
-            InvocationType="Event",
-            Payload=json.dumps({"channel": "whatsapp", "to": party.phone, "interactive": message}).encode("utf-8"),
-        )
+        channel.current().send(party.phone, interactive=message)
         return ("Form sent; it reaches the driver before your reply. Answer with one short sentence "
                 "telling them to open it, nothing more.")
 

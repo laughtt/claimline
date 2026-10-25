@@ -6,3 +6,4 @@ cdk.out/
 *.pem
 credentials
 build/
+pipeline/.data/
