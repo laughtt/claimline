@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claimline · Overview</title>
+<meta name="description" content="Qué es Claimline, cómo funciona y todo lo avanzado hasta el 24 de octubre de 2026.">
+<style>
+:root {
+  --bg: #f7f6f2; --surface: #ffffff; --ink: #1d1d1b; --muted: #5f5e58; --line: #e3e1d9;
+  --accent: #0f6e56; --accent-soft: #e2f2ec; --warn: #9a5b00; --warn-soft: #fbefdc;
+  --bad: #a3312a; --bad-soft: #f8e4e2; --code: #f0eee8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161614; --surface: #1f1f1c; --ink: #ecebe6; --muted: #a8a69e; --line: #34332e;
+    --accent: #4fc39d; --accent-soft: #16352b; --warn: #e2a74d; --warn-soft: #3a2a12;
+    --bad: #ec8279; --bad-soft: #3d1c19; --code: #2a2a26;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161614; --surface: #1f1f1c; --ink: #ecebe6; --muted: #a8a69e; --line: #34332e;
+  --accent: #4fc39d; --accent-soft: #16352b; --warn: #e2a74d; --warn-soft: #3a2a12;
+  --bad: #ec8279; --bad-soft: #3d1c19; --code: #2a2a26;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+p { margin: 0 0 12px; }
+a { color: var(--accent); }
+code { font: 0.88em ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--code); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.lede { color: var(--muted); font-size: 1.1rem; max-width: 60ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; }
+.chips li { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 0.9rem; }
+.chips b { color: var(--accent); }
+nav { margin: 24px 0 0; font-size: 0.92rem; }
+nav a { margin-right: 14px; white-space: nowrap; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 12px 0; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid .card { margin: 0; }
+.card h3 { margin-top: 0; }
+.note { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+ol.steps { padding-left: 22px; }
+ol.steps li { margin: 6px 0; }
+.table-wrap { overflow-x: auto; margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.tag { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.ok { background: var(--accent-soft); color: var(--accent); }
+.wip { background: var(--warn-soft); color: var(--warn); }
+.todo { background: var(--bad-soft); color: var(--bad); }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 16px 0; }
+.flow span.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 0.88rem; }
+.flow span.box b { display: block; font-size: 0.92rem; }
+.flow span.arrow { color: var(--muted); }
+.timeline { list-style: none; padding: 0; margin: 12px 0; }
+.timeline li { position: relative; padding: 0 0 14px 22px; border-left: 2px solid var(--line); margin-left: 6px; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.timeline .day { font-weight: 700; }
+.timeline ul { margin: 4px 0 0; padding-left: 18px; }
+.chat { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.bubble { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 0.92rem; }
+.bubble.in { background: var(--surface); border: 1px solid var(--line); align-self: flex-start; }
+.bubble.out { background: var(--accent-soft); align-self: flex-end; }
+.bubble small { display: block; color: var(--muted); font-size: 0.75rem; }
+footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 560px) { h1 { font-size: 1.7rem; } .flow span.arrow { display: none; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Claimline</h1>
+  <p class="lede">Un agente de IA que ayuda a los dos conductores de un choque a escribir, por WhatsApp y cada uno en su idioma, un único parte conjunto y neutral para sus aseguradoras.</p>
+  <ul class="chips">
+    <li>Hackathon <b>AWS CDS Agentic AI</b></li>
+    <li>Demo: <b>dom 25 oct 2026</b></li>
+    <li>Entrega: <b>mar 27 oct 2026</b></li>
+    <li>Estado al <b>24 oct</b></li>
+    <li>Último commit <b>17e3262</b></li>
+  </ul>
+  <nav>
+    <a href="#que">Qué es</a><a href="#como">Cómo funciona</a><a href="#arq">Arquitectura</a>
+    <a href="#estado">Estado</a><a href="#avance">Avance</a><a href="#aprobacion">Aprobación</a>
+    <a href="#pruebas">Pruebas</a><a href="#pendiente">Pendiente</a><a href="#porque">Por qué necesito el móvil</a>
+    <a href="#codigo">Código</a><a href="#reglas">Reglas</a>
+  </nav>
+</header>
+
+<section id="que">
+  <h2>Qué es</h2>
+  <p>Hoy, tras un choque, cada conductor llama a su aseguradora y cuenta su versión por separado. Las aseguradoras tardan semanas en cruzar dos relatos que casi nunca coinciden. Claimline los cruza en el momento del accidente.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>BothSides <span class="tag ok">demo principal</span></h3>
+      <p>Los dos conductores escriben al mismo número de WhatsApp. El agente recoge cada versión por separado, las compara en código y pregunta solo por lo que no coincide, sin decir nunca quién tiene la culpa.</p>
+    </div>
+    <div class="card">
+      <h3>First Call <span class="tag wip">opcional</span></h3>
+      <p>El asegurado avisa a su aseguradora por WhatsApp. Antes manda "ALTA", que abre la ventana de 24 horas y permite usar botones sin plantillas aprobadas.</p>
+    </div>
+  </div>
+  <div class="note">
+    <b>Por qué WhatsApp va por AWS.</b> El premio de Meta exige AWS End User Messaging Social. No valen WhatsApp Web, librerías no oficiales (Baileys, whatsapp-web.js) ni intermediarios como Twilio.
+  </div>
+</section>
+
+<section id="como">
+  <h2>Cómo funciona BothSides</h2>
+  <ol class="steps">
+    <li><b>Heridos primero.</b> Si alguien está herido, el agente da el número de emergencias (105) y pasa el caso a una persona.</li>
+    <li><b>El conductor A abre el caso</b> y recibe un enlace <code>JOIN &lt;código&gt;</code> para enseñárselo al conductor B.</li>
+    <li><b>Cada uno da su versión</b>, por texto o con notas de voz, en español o en inglés. Cada dato se guarda con las palabras exactas del conductor como prueba.</li>
+    <li><b>Comparación en código, no por el modelo.</b> Cada hecho queda como <i>coinciden</i>, <i>solo A</i>, <i>solo B</i> o <i>en conflicto</i>. Se toleran 10 km/h y 10 minutos de diferencia. Si los dos dicen que su semáforo estaba en verde, es un conflicto.</li>
+    <li><b>Preguntas neutrales.</b> Sobre cada conflicto se pregunta una sola vez a cada conductor, sin decir quién tiene razón.</li>
+    <li><b>Placas y daños.</b> Las placas se piden por escrito, porque la voz las puede entender mal. Los daños se guardan completos por vehículo.</li>
+    <li><b>Aprobación en un formulario de WhatsApp.</b> Cada conductor revisa el borrador en su idioma y lo aprueba o pide cambios.</li>
+    <li><b>Informe a las aseguradoras</b> en PDF por email (SES) <span class="tag todo">pendiente</span>.</li>
+  </ol>
+
+  <h3>Un ejemplo real de la simulación</h3>
+  <div class="chat">
+    <div class="bubble in"><small>A · nota de voz</small>Mi semáforo estaba en verde. El otro coche me chocó en la puerta delantera derecha.</div>
+    <div class="bubble in"><small>B · voice note</small>My light was green. I hit the other car on its front right door.</div>
+    <div class="bubble out"><small>Agente → B</small>The other driver also remembers their own light as green. Could you describe your own light again as you went into the intersection?</div>
+    <div class="bubble out"><small>Agente → A</small>El otro conductor también recuerda que su propio semáforo estaba en verde. ¿Podría describir de nuevo cómo estaba su propio semáforo?</div>
+  </div>
+</section>
+
+<section id="arq">
+  <h2>Arquitectura</h2>
+  <p>Todo está en una pila de CDK, <code>test-claimline-core</code>, en la cuenta compartida 888564397690, región eu-west-1.</p>
+  <div class="flow" aria-label="Recorrido de un mensaje">
+    <span class="box"><b>WhatsApp</b>+51 992 861 202</span><span class="arrow">→</span>
+    <span class="box"><b>EUM Social</b>número vinculado</span><span class="arrow">→</span>
+    <span class="box"><b>SNS</b>test-claimline-inbound</span><span class="arrow">→</span>
+    <span class="box"><b>Lambda router</b>deduplica, medios, Transcribe</span><span class="arrow">→</span>
+    <span class="box"><b>AgentCore Runtime</b>Strands + Claude Opus 5.5</span><span class="arrow">→</span>
+    <span class="box"><b>Lambda send</b>único punto de envío</span>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>Pieza</th><th>Qué hace</th></tr>
+    <tr><td>Lambda <code>test-claimline-router</code></td><td>Descarta mensajes duplicados, copia fotos y audios al bucket de medios, transcribe notas de voz con Amazon Transcribe (unos 12 s) y lee las respuestas del formulario.</td></tr>
+    <tr><td>AgentCore Runtime <code>test_claimline_agent</code></td><td>El agente Strands con Claude Opus 5.5 en Bedrock. Un agente por turno, con herramientas atadas a ese conductor y ese caso.</td></tr>
+    <tr><td>AgentCore Memory</td><td>El historial de cada conductor en cada caso, como una sesión <code>&lt;caso&gt;-&lt;rol&gt;</code>.</td></tr>
+    <tr><td>DynamoDB (7 tablas)</td><td>Casos, conductores, hechos, mensajes y demás. Ningún teléfono se guarda en claro como clave: se usa un hash.</td></tr>
+    <tr><td>S3 <code>test-eng-claimline-media-…</code></td><td>Audios, fotos y transcripciones como prueba de cada dato.</td></tr>
+    <tr><td>WhatsApp Flow <code>test-claimline-approval</code></td><td>El formulario de revisión. Uno solo sirve para todos los idiomas, porque los textos viajan en cada mensaje.</td></tr>
+    <tr><td>Lambda <code>test-claimline-send</code></td><td>El único código que envía mensajes: texto o interactivos (formulario).</td></tr>
+  </table></div>
+  <p><b>Herramientas del agente:</b> <code>record_fact</code>, <code>set_language</code>, <code>reconcile_case</code>, <code>message_other_driver</code>, <code>send_approval_form</code> y <code>handoff_human</code>.</p>
+</section>
+
+<section id="estado">
+  <h2>Estado actual</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Parte</th><th>Estado</th><th>Cómo se comprobó</th></tr>
+    <tr><td>Número de WhatsApp vinculado</td><td><span class="tag ok">hecho</span></td><td>Mensajes reales enviados y recibidos</td></tr>
+    <tr><td>Pila desplegada en eu-west-1</td><td><span class="tag ok">hecho</span></td><td>CloudFormation <code>UPDATE_COMPLETE</code> el 24 oct</td></tr>
+    <tr><td>BothSides de punta a punta</td><td><span class="tag ok">hecho</span></td><td>Dos móviles reales, caso ZM4X65 (23 oct)</td></tr>
+    <tr><td>Comparación de versiones</td><td><span class="tag ok">hecho</span></td><td>Tests y móviles reales</td></tr>
+    <tr><td>Notas de voz (Transcribe)</td><td><span class="tag ok">hecho</span></td><td>Móvil real el 24 oct, español e inglés</td></tr>
+    <tr><td>RESET entre ensayos</td><td><span class="tag ok">hecho</span></td><td>Móviles reales</td></tr>
+    <tr><td>Formulario de aprobación</td><td><span class="tag wip">desplegado, sin probar en móvil</span></td><td>Simulación con Claude real; falta ver si se abre en WhatsApp</td></tr>
+    <tr><td>Rechazo del informe y paso a una persona</td><td><span class="tag wip">desplegado, sin probar en móvil</span></td><td>Simulación y tests</td></tr>
+    <tr><td>Informe PDF y envío por SES</td><td><span class="tag todo">pendiente</span></td><td>Falta que el compañero verifique correos en SES</td></tr>
+    <tr><td>First Call</td><td><span class="tag todo">pendiente</span></td><td>Opcional</td></tr>
+  </table></div>
+</section>
+
+<section id="avance">
+  <h2>Lo que se ha avanzado, día a día</h2>
+  <ul class="timeline">
+    <li><span class="day">Mié 21 oct</span> · base del proyecto
+      <ul>
+        <li>Pila core: S3, DynamoDB, SNS, router y envío.</li>
+        <li>Primera versión de la comparación de versiones.</li>
+        <li>Límite de permisos <code>test-claimline-deploy</code> en todos los roles.</li>
+      </ul></li>
+    <li><span class="day">Jue 22 oct</span> · el agente
+      <ul>
+        <li>Agente BothSides en Bedrock AgentCore, con Memory.</li>
+        <li>Arreglo de los bloques de razonamiento que Bedrock rechazaba al restaurar el historial.</li>
+        <li>Contexto propio para el conductor B y una línea de log por mensaje.</li>
+        <li>Conflicto del semáforo cruzado, tolerancia horaria, juez de significado y comparación automática.</li>
+      </ul></li>
+    <li><span class="day">Vie 23 oct</span> · primera prueba real
+      <ul>
+        <li>BothSides funciona con dos móviles reales (caso ZM4X65).</li>
+        <li><code>RESET</code> para ensayar con los mismos teléfonos; un <code>JOIN</code> erróneo ya no abre un caso fantasma.</li>
+        <li>El agente siempre dice de qué coche habla ("su propio vehículo" / "el vehículo del otro conductor").</li>
+      </ul></li>
+    <li><span class="day">Sáb 24 oct</span> · voz y aprobación
+      <ul>
+        <li>Notas de voz con Amazon Transcribe, probadas con móvil real.</li>
+        <li>Los daños de cada vehículo se guardan completos, no solo la última pieza.</li>
+        <li>WhatsApp Flow de aprobación: formulario en el idioma de cada conductor, decisión guardada en código, caso <code>APPROVED</code> cuando aprueban los dos.</li>
+        <li>Si falta un conflicto en el formulario, no se envía: los dos ven las mismas disputas.</li>
+        <li>El agente ya no promete que el informe "se envía a las aseguradoras", porque eso aún no existe.</li>
+        <li>Rechazos: queda claro que aprobar no es darle la razón al otro, y el caso pasa a una persona tras dos rechazos sin corrección.</li>
+        <li>Handover para el compañero y GitHub al día.</li>
+      </ul></li>
+  </ul>
+</section>
+
+<section id="aprobacion">
+  <h2>Aprobación y rechazo del informe</h2>
+  <p>Claimline no dicta veredicto. Aprobar significa "el informe recoge lo que dijo cada uno", no "acepto la versión del otro". Los puntos en disputa quedan en el informe con las dos versiones.</p>
+  <div class="grid">
+    <div class="card"><h3>Aprueba</h3><p>Se guarda en código. Cuando aprueban los dos, el caso pasa a <code>APPROVED</code> y los dos reciben "el informe está completo".</p></div>
+    <div class="card"><h3>Pide cambios en algo suyo</h3><p>El agente pregunta qué está mal, lo corrige y le vuelve a mandar el formulario.</p></div>
+    <div class="card"><h3>No acepta lo que dijo el otro</h3><p>No se puede cambiar. Queda como disputa y puede dejar su opinión como comentario. Al segundo rechazo sin corrección, el caso pasa a una persona y se avisa a los dos.</p></div>
+  </div>
+  <p>Cada formulario lleva un código <code>&lt;caso&gt;-&lt;rol&gt;</code>, así que un formulario de un caso anterior no puede aprobar el caso nuevo.</p>
+</section>
+
+<section id="pruebas">
+  <h2>Cómo se ha comprobado</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Prueba</th><th>Qué cubre</th><th>Resultado</th></tr>
+    <tr><td>22 tests unitarios</td><td>Comparación, transcripción, formulario, rechazos</td><td><span class="tag ok">pasan</span></td></tr>
+    <tr><td><code>scripts/simulate.py</code></td><td>A en español y B en inglés por texto, con Claude real</td><td><span class="tag ok">pasa</span></td></tr>
+    <tr><td><code>scripts/simulate_voice.py</code></td><td>El guion casi entero por voz, hasta que los dos aprueban</td><td><span class="tag ok">pasa</span></td></tr>
+    <tr><td><code>scripts/simulate_refusal.py</code></td><td>Un conductor que no acepta el informe</td><td><span class="tag ok">pasa</span></td></tr>
+    <tr><td>Dos móviles reales</td><td>Texto, voz, comparación y RESET</td><td><span class="tag ok">funciona</span></td></tr>
+    <tr><td>Dos móviles reales</td><td>Formulario de aprobación</td><td><span class="tag wip">pendiente</span></td></tr>
+  </table></div>
+  <p>Las simulaciones usan el mismo agente, prompts y herramientas que lo desplegado, con Claude real en Bedrock. Solo la base de datos y WhatsApp son de mentira, así que no escriben nada en AWS ni envían mensajes.</p>
+</section>
+
+<section id="pendiente">
+  <h2>Pendiente</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Tarea</th><th>Quién</th><th>Para cuándo</th></tr>
+    <tr><td>Probar el formulario de aprobación con los dos móviles</td><td>Equipo + Claude</td><td>Antes de grabar</td></tr>
+    <tr><td>Publicar el Flow si el modo borrador no se abre (irreversible: luego solo se puede clonar)</td><td>Decisión del equipo</td><td>Antes de grabar</td></tr>
+    <tr><td>Informe PDF y envío por SES; si SES no llega, el PDF por WhatsApp</td><td>Claude</td><td>Antes de grabar</td></tr>
+    <tr><td>Verificar en SES el remitente y dos correos de "aseguradora"</td><td>Compañero (admin)</td><td>Urgente</td></tr>
+    <tr><td>Registrar los avisos de entrega de Meta en los logs</td><td>Claude</td><td>Antes de la prueba con móviles</td></tr>
+    <tr><td>Plazo para quien nunca responde (por ejemplo, 24 h)</td><td>—</td><td>Después de la demo</td></tr>
+    <tr><td>Spec, README, JUDGE_TEST, ORIGINAL_WORK y diagrama</td><td>Claude</td><td>Antes del 27</td></tr>
+    <tr><td>Rotar la access key compartida, MFA, alerta de presupuesto de $50</td><td>Compañero (admin)</td><td>Cuanto antes</td></tr>
+  </table></div>
+  <h3>Riesgos</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Riesgo</th><th>Qué hacemos</th></tr>
+    <tr><td>El formulario en borrador no se abre en WhatsApp</td><td>Publicarlo con <code>scripts/flow.py --publish</code> y cambiar el modo a <code>published</code></td></tr>
+    <tr><td>SES no se verifica a tiempo</td><td>Enviar el PDF por WhatsApp como documento</td></tr>
+    <tr><td>Las notas de voz tardan 15–30 s más</td><td>Mezclar texto y voz en la grabación, o recortar las esperas</td></tr>
+    <tr><td>Coste de Opus 5.5</td><td>Alerta de presupuesto; Sonnet 5.5 si se activa en Marketplace</td></tr>
+  </table></div>
+</section>
+
+<section id="porque">
+  <h2>Por qué necesito el número de un móvil y un "hola"</h2>
+  <p>Es la única duda que no pueden resolver ni los tests ni las simulaciones: <b>si WhatsApp abre el formulario mientras está en borrador</b>. Las simulaciones no hablan con Meta; solo un mensaje real lo dice.</p>
+  <ol class="steps">
+    <li><b>El número</b> es el destinatario de un formulario de prueba que le mandaría directamente desde AWS, sin pasar por toda la conversación. No puedo sacarlo de los casos guardados porque el usuario <code>test</code> no tiene permiso para leer DynamoDB.</li>
+    <li><b>El "hola"</b> abre la ventana de 24 horas de WhatsApp. Fuera de esa ventana, Meta no deja enviar mensajes interactivos (como el formulario) sin una plantilla aprobada, y el envío fallaría por eso y no por el formulario.</li>
+    <li><b>Qué obtenemos:</b> si Meta rechaza el borrador, el error llega al momento y sabremos que hay que publicar el Flow antes de grabar. Si lo acepta, en el móvil se ve si el botón "Revisar informe" abre el formulario.</li>
+  </ol>
+  <div class="note warn">Publicar el Flow es irreversible: un Flow publicado ya no se puede editar, solo clonar. Por eso primero probamos en borrador y solo publicamos si hace falta y con permiso del equipo.</div>
+  <p>Yo no puedo tocar los móviles: mandar notas de voz y pulsar el botón lo tenéis que hacer vosotros. Lo que sí hago es leer los logs de AWS para ver qué respondió Meta.</p>
+</section>
+
+<section id="codigo">
+  <h2>Mapa del código</h2>
+  <p>Repo privado <a href="https://github.com/jorgeantonio-gif/claimline">jorgeantonio-gif/claimline</a>, rama <code>main</code>. En local: <code>D:\proyectos\claimline</code>.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Ruta</th><th>Qué hace</th></tr>
+    <tr><td><code>agent/main.py</code></td><td>Punto de entrada; describe cada mensaje (texto, voz, formulario) y guarda las respuestas del formulario</td></tr>
+    <tr><td><code>agent/prompts.py</code></td><td>Reglas del agente y la situación de cada turno</td></tr>
+    <tr><td><code>agent/tools.py</code></td><td>Las seis herramientas, incluido el formulario de aprobación</td></tr>
+    <tr><td><code>agent/cases.py</code></td><td>Casos, códigos JOIN, RESET, hechos, aprobaciones y rechazos, sin LLM</td></tr>
+    <tr><td><code>agent/reconcile.py</code>, <code>agent/judge.py</code></td><td>Comparación de versiones; Claude solo decide si dos textos libres dicen lo mismo</td></tr>
+    <tr><td><code>lambdas/router</code>, <code>lambdas/send</code></td><td>Entrada (con Transcribe) y salida de mensajes</td></tr>
+    <tr><td><code>flows/approval.json</code>, <code>scripts/flow.py</code></td><td>El formulario de WhatsApp y el script que lo crea y publica</td></tr>
+    <tr><td><code>infra/</code>, <code>app.py</code></td><td>La pila de CDK, los nombres y las etiquetas</td></tr>
+    <tr><td><code>scripts/simulate*.py</code></td><td>Simulaciones con Claude real, sin tocar AWS</td></tr>
+    <tr><td><code>tests/</code></td><td>22 tests unitarios</td></tr>
+    <tr><td><code>HANDOVER.md</code>, <code>docs/PROMPT_CONTEXTO.md</code></td><td>Para el compañero y para retomar con Claude</td></tr>
+  </table></div>
+</section>
+
+<section id="reglas">
+  <h2>Reglas de la cuenta compartida</h2>
+  <ul>
+    <li>Todo se llama <code>test-claimline-…</code> (buckets <code>test-eng-claimline-…</code>, AgentCore <code>test_claimline_…</code>) y lleva la etiqueta <code>Owner = test</code>.</li>
+    <li>No se tocan las instancias <code>test</code> y <code>test-2</code> ni el bucket <code>test-eu-9b82d5</code>: son producción de otra persona.</li>
+    <li>Las claves solo viven en <code>~/.aws/credentials</code>; nunca en código, git ni chat.</li>
+    <li>Antes de cada <code>cdk deploy</code> se revisa <code>cdk diff</code>.</li>
+    <li>El agente nunca dice quién tiene la culpa ni si algo está cubierto, nunca comparte datos personales de un conductor con el otro y siempre dice que es una IA.</li>
+  </ul>
+</section>
+
+<footer>Claimline · estado al 24 de octubre de 2026 · commit 17e3262</footer>
+</main>
+</body>
+</html>
