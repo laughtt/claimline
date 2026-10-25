@@ -115,6 +115,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
   <h1>Claimline · BothSides</h1>
   <span class="badge" id="mode">WHATSAPP_ON=0 · prototipo local</span>
   <p>Los dos "móviles" hacen de WhatsApp y Meta. Detrás corre el código desplegado: el router Lambda lee los mismos webhooks, el agente usa Claude real y el send Lambda arma los mismos mensajes de la API de Meta, que aquí se validan como lo haría Meta. Solo se cambian los clientes de AWS, y ElevenLabs reemplaza a Transcribe.</p>
+  <label>Escenario <select class="btn" id="scenario"><option value="semaforo">Los dos en verde</option><option value="peaton">Frenazo por un peatón</option></select></label>
   <button class="btn" id="reset">Reiniciar todo</button>
 </header>
 
@@ -158,28 +159,55 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 
 <script>
 // Each line: [text, voice?]. Plates are typed, as the agent asks
-const SCRIPT = {
-  A: [
-    ["Hola, acabo de tener un choque con otro coche en un cruce.", true],
-    ["No, nadie está herido, solo daños en los coches.", true],
-    ["Fue en el cruce de la avenida Javier Prado con la avenida Arequipa, a las siete y cuarenta de la noche. Yo iba a unos cuarenta kilómetros por hora y mi semáforo estaba en verde. El otro coche me chocó en la puerta delantera derecha.", true],
-    ["Estoy seguro, el semáforo estaba en verde cuando entré al cruce.", true],
-    ["Mi coche tiene la puerta derecha hundida y el espejo roto.", true],
-    ["ABC-123", false],
-    ["Eso es todo.", true],
-    ["RESET", false],
-  ],
-  B: [
-    ["JOIN {code}", false],
-    ["No, nobody is hurt.", true],
-    ["It happened at Javier Prado and Arequipa, around seven forty PM. My light was green. I was going about thirty kilometers per hour, and I hit the other car on its front right door.", true],
-    ["I'm sure, it had just turned green when I went through.", true],
-    ["My front bumper is cracked and the left headlight is broken.", true],
-    ["My plate is ABC-123 and the other car's plate is XYZ-456", false],
-    ["That's all.", true],
-    ["RESET", false],
-  ],
+const SCRIPTS = {
+  semaforo: {
+    A: [
+      ["Hola, acabo de tener un choque con otro coche en un cruce.", true],
+      ["No, nadie está herido, solo daños en los coches.", true],
+      ["Fue en el cruce de la avenida Javier Prado con la avenida Arequipa, a las siete y cuarenta de la noche. Yo iba a unos cuarenta kilómetros por hora y mi semáforo estaba en verde. El otro coche me chocó en la puerta delantera derecha.", true],
+      ["Estoy seguro, el semáforo estaba en verde cuando entré al cruce.", true],
+      ["Mi coche tiene la puerta derecha hundida y el espejo roto.", true],
+      ["ABC-123", false],
+      ["Eso es todo.", true],
+      ["RESET", false],
+    ],
+    B: [
+      ["JOIN {code}", false],
+      ["No, nobody is hurt.", true],
+      ["It happened at Javier Prado and Arequipa, around seven forty PM. My light was green. I was going about thirty kilometers per hour, and I hit the other car on its front right door.", true],
+      ["I'm sure, it had just turned green when I went through.", true],
+      ["My front bumper is cracked and the left headlight is broken.", true],
+      ["My plate is ABC-123 and the other car's plate is XYZ-456", false],
+      ["That's all.", true],
+      ["RESET", false],
+    ],
+  },
+  peaton: {
+    A: [
+      ["Hola, acabo de tener un choque. Me chocaron por detrás.", true],
+      ["Nadie está herido. El peatón tampoco, no llegué a tocarlo.", true],
+      ["Fue en la avenida Larco con la calle Schell, en Miraflores, a las seis y cuarto de la tarde. Iba a unos cuarenta kilómetros por hora y un peatón cruzó de repente con el semáforo peatonal en rojo, así que frené fuerte. El otro coche me golpeó en el parachoques trasero.", true],
+      ["Sí, estoy seguro, era un señor que cruzó corriendo sin mirar.", true],
+      ["Mi parachoques trasero está hundido.", true],
+      ["XYZ-456", false],
+      ["Estoy seguro, frené porque cruzó un peatón. No tengo fotos.", true],
+      ["Eso es todo.", true],
+      ["RESET", false],
+    ],
+    B: [
+      ["JOIN {code}", false],
+      ["No, nobody is hurt.", true],
+      ["It was on Larco Avenue at Schell Street, around six fifteen PM. I was doing about thirty five and the car in front suddenly slammed on the brakes for no reason. I hit its rear bumper with my front bumper.", true],
+      ["I didn't see anyone crossing, I was looking at the car in front.", true],
+      ["My front bumper and bonnet are dented.", true],
+      ["The other car's plate is ABC-123", false],
+      ["I'm sure, I didn't see anyone. No photos.", true],
+      ["That's all.", true],
+      ["RESET", false],
+    ],
+  },
 };
+let scenario = "semaforo";
 const STAGES = {
   router: ["router", "Webhook"], tts: ["in", "Voz de ejemplo generada"],
   transcribe: ["voice", "Transcripción"], agent: ["agent", "Agente pensando"],
@@ -365,7 +393,7 @@ async function play(text, btn) {
 function renderScript(who) {
   const box = $(".lines", phone(who));
   box.innerHTML = "";
-  for (const [raw, voice] of SCRIPT[who]) {
+  for (const [raw, voice] of SCRIPTS[scenario][who]) {
     const text = raw.replace("{code}", caseId || "······");
     const row = document.createElement("div");
     row.className = "line";
@@ -418,6 +446,7 @@ for (const who of ["A", "B"]) {
   renderScript(who);
 }
 $("#reset").onclick = () => { if (confirm("¿Borrar el caso y las conversaciones?")) post("/api/reset", {}); };
+$("#scenario").onchange = ev => { scenario = ev.target.value; renderScript("A"); renderScript("B"); };
 $("#flow-close").onclick = () => $("#flow").close();
 poll();
 </script>

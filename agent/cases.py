@@ -31,10 +31,13 @@ JOIN_RE = re.compile(r"^\s*JOIN\s+([A-Za-z0-9]{6})\b", re.IGNORECASE)
 # Exact word only, so a driver doesn't trigger it by accident
 RESET_RE = re.compile(r"^\s*RESET\s*$", re.IGNORECASE)
 
-SUBJECTS = {"A", "B", "scene"}
+# third_party: someone involved who isn't one of the two drivers (a pedestrian,
+# a cyclist, an animal); their facts are compared like any other
+SUBJECTS = {"A", "B", "scene", "third_party"}
 FIELDS = {
     "signal_state", "speed_kmh", "direction", "lane", "impact_point", "time",
     "location", "injuries", "damage_part", "third_party_plate", "weather",
+    "cause", "third_party_action",
 }
 # What a driver must have told before the two versions are compared
 VERSION_FIELDS = {"location", "time", "impact_point"}

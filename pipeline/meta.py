@@ -81,7 +81,7 @@ class FakeMeta:
                "image/jpeg": "jpeg", "image/png": "png", "image/webp": "webp"}.get(mime.split(";")[0].strip(), "bin")
         # Like the real service: the key is a prefix, and the media id and extension are appended
         key = f"{destinationS3File['key']}{mediaId}.{ext}"
-        self.s3.put(key, data, mime.split(";")[0].strip())
+        self.s3.put(key, data, mime.split(";")[0].strip(), media_id=mediaId)
         return {"mimeType": mime, "fileSize": len(data)}
 
     def send_whatsapp_message(self, originationPhoneNumberId, message, metaApiVersion):

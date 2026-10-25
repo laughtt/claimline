@@ -53,6 +53,15 @@ class ReconcileTest(unittest.TestCase):
         b = [Fact("signal_state@B", "green then amber", "B")]
         self.assertNotIn(SIGNAL_CROSS, by_field(reconcile([Fact("signal_state@A", "green", "A")], b)))
 
+    def test_third_party_seen_by_one_driver_only(self):
+        a = [Fact("third_party_action@third_party", "pedestrian crossed against the light", "A"),
+             Fact("cause@A", "braked hard for a pedestrian", "A")]
+        r = by_field(reconcile(a, [Fact("cause@A", "braked suddenly, no reason seen", "B")]))
+        self.assertEqual(r["third_party_action@third_party"].status, ONLY_A)
+        self.assertEqual(r["cause@A"].status, CONFLICT)
+        r = by_field(reconcile(a, [Fact("third_party_action@third_party", "none seen", "B")]))
+        self.assertEqual(r["third_party_action@third_party"].status, CONFLICT)
+
     def test_judge_skips_measured_fields(self):
         judge = lambda field, a, b: True
         r = by_field(reconcile([Fact("speed_kmh@A", "40", "A")], [Fact("speed_kmh@A", "90", "B")], judge))

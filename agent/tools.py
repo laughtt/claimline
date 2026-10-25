@@ -62,11 +62,17 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
 
         Args:
             field: One of signal_state, speed_kmh, direction, lane, impact_point,
-                time, location, injuries, damage_part, third_party_plate, weather.
-            about: Whose vehicle the fact is about: "A", "B", or "scene" for
-                location, time, weather and injuries. "I was going 40" from
-                driver B is about "B"; "the other car ran the light" from
-                driver B is about "A".
+                time, location, injuries, damage_part, third_party_plate, weather,
+                cause, third_party_action. cause is a vehicle's manoeuvre and
+                the reason the driver gives, e.g. "braked hard for a pedestrian"
+                or "braked suddenly, no reason seen". third_party_action is what
+                a pedestrian, cyclist or animal did, e.g. "pedestrian crossed
+                against the pedestrian light", or "none seen" when the driver
+                saw nobody.
+            about: Whose vehicle the fact is about: "A", "B", "scene" for
+                location, time, weather and injuries, or "third_party" for
+                third_party_action. "I was going 40" from driver B is about
+                "B"; "the other car ran the light" from driver B is about "A".
             value: Short normalised value in English, e.g. "red", "50",
                 "front left". speed_kmh is a number only; signal_state is the
                 colour only ("green", "red", "amber"), details stay in quote. A later call for
@@ -81,7 +87,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
         if field not in cases.FIELDS:
             return f"Unknown field {field}. Use one of: {', '.join(sorted(cases.FIELDS))}"
         if about not in cases.SUBJECTS:
-            return "about must be A, B or scene."
+            return "about must be A, B, scene or third_party."
         joined = cases.other_party(party) is not None
         # Only the fact that completes both versions triggers the comparison
         was_complete = joined and cases.both_versions_given(party.case_id)

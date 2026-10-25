@@ -25,10 +25,14 @@ DIALECTS = {"es": "es-US", "en": "en-US"}
 class FakeS3:
     def __init__(self):
         self.objects: dict[str, tuple[bytes, str]] = {}
+        # Which WhatsApp media each object came from, so the page can match a transcript to its bubble
+        self.media_ids: dict[str, str] = {}
         S3_DIR.mkdir(parents=True, exist_ok=True)
 
-    def put(self, key, data, content_type="application/octet-stream"):
+    def put(self, key, data, content_type="application/octet-stream", media_id=None):
         self.objects[key] = (data, content_type)
+        if media_id:
+            self.media_ids[key] = media_id
         path = S3_DIR / key
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
@@ -69,7 +73,7 @@ class FakeTranscribe:
         key = urlparse(Media["MediaFileUri"]).path.lstrip("/")
         data, mime = self.s3.objects[key]
         who = self.who_by_phone.get("+" + key.split("/")[2])
-        media_id = pathlib.Path(key).stem
+        media_id = self.s3.media_ids.get(key)
         started = time.time()
         result = self.transcriber.transcribe(data, mime)
         job = {"TranscriptionJobName": TranscriptionJobName, "TranscriptionJobStatus": "FAILED",
