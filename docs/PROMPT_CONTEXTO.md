@@ -1,4 +1,4 @@
-Retomamos Claimline, nuestro proyecto para el hackathon AWS CDS Agentic AI. Responde siempre en español. Este es el estado a última hora del 24 de octubre de 2026.
+Retomamos Claimline, nuestro proyecto para el hackathon AWS CDS Agentic AI. Responde siempre en español. Este es el estado a primera hora del 25 de octubre de 2026.
 
 ## Qué es
 Claimline es un agente de IA que tramita partes de accidente de coche por WhatsApp. La entrega es el martes 27 de octubre de 2026 y la demo se graba el domingo 25.
@@ -68,7 +68,10 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 - El formulario de aprobación funciona en simulación y en el prototipo, con los dos conductores aprobando y el caso en `APPROVED`. **Falta probarlo en un móvil real**, porque sigue en borrador.
 - Rechazos: aprobar significa "recoge lo que dijo cada uno", no aceptar la versión del otro. Al segundo "Algo está mal" sin corrección, el caso pasa a `HANDOFF` y se avisa a los dos.
 - Escenario del peatón: lo que hizo un tercero (`third_party_action`) y el motivo de la maniobra (`cause`) se guardan y se comparan como cualquier dato, sin culpar a nadie.
-- El agente ya no promete que el informe se envía a las aseguradoras, porque eso aún no existe.
+- Informe PDF: al aprobar los dos, `agent/report.py` lo genera en código, se guarda en `reports/` del bucket y llega a los dos conductores como documento de WhatsApp. El agente no dice que se envió a una aseguradora, porque eso (SES) aún no existe. Probado en simulación y en el prototipo; en AWS real no se ha podido probar sin WhatsApp.
+- Documentos para los jueces hechos (en inglés): `README.md` (con la sección "How we use WhatsApp" para el premio de Meta y la nota de costes), `JUDGE_TEST.md`, `ORIGINAL_WORK.md` y `docs/architecture.png` (fuente en `docs/architecture/`).
+- Despliegue portable: `CLAIMLINE_ACCOUNT`/`CLAIMLINE_REGION` y `-c permissionsBoundary=` para otra cuenta; nuestro despliegue no cambia. El prototipo funciona con credenciales de cualquiera y sin clave de ElevenLabs (solo texto).
+- Coste medido de un caso completo (`simulate_voice.py`): unos 247.000 tokens de entrada y 10.000 de salida en Claude, 135 s.
 
 ## Problemas ya resueltos (no repetirlos)
 - Bedrock rechaza los bloques de razonamiento restaurados de Memory, porque el system prompt cambia entre turnos. Por eso existe `drop_reasoning()`.
@@ -92,10 +95,11 @@ Desde Git Bash, usar `MSYS_NO_PATHCONV=1` en los comandos de `aws logs`. El buck
 
 ## Pendiente
 1. Envío del informe PDF a las aseguradoras por SES, cuando el compañero verifique los correos. El PDF ya se genera y llega a los dos conductores por WhatsApp.
-2. Ensayar y grabar la demo con el prototipo (domingo 25).
-3. Probar el formulario en un móvil real y decidir si se publica.
-4. `JUDGE_TEST.md`, `ORIGINAL_WORK.md`, diagrama de arquitectura, README final y spec con eu-west-1.
-5. Tareas del compañero: correos de SES, rotar la access key compartida, activar MFA y alerta de presupuesto de unos $50. Rotar la clave de ElevenLabs después de la demo.
-6. Siguientes pasos (fuera de la demo): avisar a una persona real en `HANDOFF`, plazo para quien no responde, atropello con un solo conductor, guardrails de Bedrock y First Call.
+2. Guion del vídeo (3 minutos máximo), ensayar y grabar con el prototipo (domingo 25).
+3. Texto de Devpost con los títulos del baremo y la sección de WhatsApp (lunes 26); entrega el martes 27.
+4. Decidir el acceso al repo: público con `LICENSE` MIT, o privado compartido con `testing@devpost.com` y `aws-cds-partner@amazon.com`. Revisar si las bases piden declarar la ayuda de IA (`ORIGINAL_WORK.md` la menciona). Oportunidad ACE.
+5. Probar el formulario en un móvil real y decidir si se publica. Actualizar la spec (dice us-east-1).
+6. Tareas del compañero: correos de SES, rotar la access key compartida, activar MFA y alerta de presupuesto de unos $50. Rotar la clave de ElevenLabs después de la demo.
+7. Siguientes pasos (fuera de la demo): avisar a una persona real en `HANDOFF`, plazo para quien no responde, atropello con un solo conductor, guardrails de Bedrock y First Call.
 
 Empieza leyendo el documento de progreso y `git log`. Comprueba `aws sts get-caller-identity --profile test` y dime el siguiente paso.

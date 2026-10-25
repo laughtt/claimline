@@ -1,6 +1,6 @@
 # Claimline · Handover
 
-Estado a última hora del 24 de octubre de 2026. Grabación de la demo: **domingo 25**. Entrega del hackathon: **martes 27 de octubre de 2026**.
+Estado a primera hora del 25 de octubre de 2026. Grabación de la demo: **domingo 25**. Entrega del hackathon: **martes 27 de octubre de 2026**.
 
 **Lo más urgente para ti:** que SES pueda enviar el informe a las aseguradoras. Basta con verificar dos o tres direcciones de prueba (3.1). Si no llega a tiempo, el informe PDF se mandará por WhatsApp como documento.
 
@@ -40,6 +40,7 @@ Es nuestra entrada al hackathon **AWS CDS Agentic AI**: un agente de IA que tram
 | Rechazo del informe | Tras dos rechazos sin corrección, el caso pasa a una persona y se avisa a los dos |
 | Escenario del peatón | Lo que hizo un peatón, ciclista o animal se guarda y compara, sin culpar a nadie |
 | Prototipo local de WhatsApp | **Funciona**: `python -m pipeline.server` → http://localhost:8765 |
+| Documentos para los jueces | **Hechos**: `README.md`, `JUDGE_TEST.md`, `ORIGINAL_WORK.md`, `docs/architecture.png` |
 | Código | Repo privado [jorgeantonio-gif/claimline](https://github.com/jorgeantonio-gif/claimline), rama `main` |
 
 ## 3. Lo que tienes que hacer tú (con tu usuario administrador)
