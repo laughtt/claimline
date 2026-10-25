@@ -26,6 +26,17 @@ class FormReplyTest(unittest.TestCase):
         self.assertIsNone(handler.form_reply({"id": "m", "type": "text", "text": {"body": "hola"}}))
 
 
+class StatusTest(unittest.TestCase):
+    def test_delivery_statuses_are_logged_and_never_reach_the_agent(self):
+        entry = {"changes": [{"value": {"statuses": [{"id": "wamid.1", "status": "failed",
+                                                       "errors": [{"code": 131047}]}]}}]}
+        with mock.patch.object(handler, "reply_from_agent") as agent, mock.patch("builtins.print") as out:
+            handler.handle_whatsapp({"whatsAppWebhookEntry": json.dumps(entry)})
+        agent.assert_not_called()
+        self.assertEqual(json.loads(out.call_args.args[0]),
+                         {"event": "status", "status": "failed", "msgId": "wamid.1", "errors": [{"code": 131047}]})
+
+
 class FlowMessageTest(unittest.TestCase):
     def test_texts_are_cut_to_meta_limits_and_draft_mode_is_set(self):
         with mock.patch.object(tools, "APPROVAL_FLOW_ID", "123"), mock.patch.object(tools, "APPROVAL_FLOW_MODE", "draft"):

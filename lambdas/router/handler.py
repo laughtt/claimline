@@ -53,6 +53,8 @@ def handler(event, context):
 def handle_whatsapp(payload):
     entry = json.loads(payload["whatsAppWebhookEntry"])
     for change in entry.get("changes", []):
+        for status in change.get("value", {}).get("statuses", []):
+            log_status(status)
         for msg in change.get("value", {}).get("messages", []):
             if not first_time_seen(msg["id"]):
                 continue
@@ -62,6 +64,14 @@ def handle_whatsapp(payload):
                 reply_from_agent(msg, media_key, transcript)
             else:
                 reply_echo(msg, media_key)
+
+
+def log_status(status) -> None:
+    """Meta's delivery report for a message we sent; a failed one carries Meta's reason."""
+    line = {"event": "status", "status": status.get("status"), "msgId": status.get("id")}
+    if status.get("errors"):
+        line["errors"] = status["errors"]
+    print(json.dumps(line))
 
 
 def first_time_seen(msg_id: str) -> bool:

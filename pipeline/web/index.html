@@ -53,6 +53,10 @@ header.top p { margin: 0; color: var(--muted); font-size: 0.88rem; flex: 1 1 320
 .bubble.in { align-self: flex-end; background: var(--mine); }
 .bubble.out { align-self: flex-start; background: var(--theirs); }
 .bubble .meta { display: flex; gap: 8px; align-items: center; justify-content: flex-end; color: var(--muted); font-size: 0.72rem; margin-top: 2px; }
+.bubble img { max-width: 220px; border-radius: 6px; display: block; }
+.bubble details { margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
+.bubble details pre { white-space: pre-wrap; max-height: 220px; overflow: auto; background: var(--code); padding: 6px; border-radius: 6px; font-size: 0.7rem; }
+.ticks { color: var(--muted); } .ticks.delivered { color: var(--accent); }
 .bubble audio { width: 230px; max-width: 100%; height: 34px; display: block; }
 .bubble .transcript { font-size: 0.82rem; color: var(--muted); font-style: italic; margin-top: 4px; }
 .speak { border: 0; background: none; color: var(--muted); padding: 0; font-size: 0.85rem; }
@@ -60,7 +64,8 @@ header.top p { margin: 0; color: var(--muted); font-size: 0.88rem; flex: 1 1 320
 .formcard b { display: block; }
 .formcard .cta { display: block; width: 100%; margin-top: 8px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--accent); font-weight: 600; padding-top: 7px; }
 .composer { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--line); background: var(--surface); }
-.composer input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 18px; padding: 7px 12px; background: var(--bg); color: var(--ink); font: inherit; }
+.composer input:not([type]) { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 18px; padding: 7px 12px; background: var(--bg); color: var(--ink); font: inherit; }
+.round.photo { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
 .round { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 1rem; flex: none; }
 .round.rec { background: var(--bad); animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .6; } }
@@ -109,16 +114,17 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 <header class="top">
   <h1>Claimline · BothSides</h1>
   <span class="badge" id="mode">WHATSAPP_ON=0 · prototipo local</span>
-  <p>Dos "móviles" en el navegador hablan con el mismo agente, herramientas y conciliación que la versión desplegada, con Claude real. Solo cambian los extremos: esta web en lugar de WhatsApp, ElevenLabs en lugar de Transcribe y tablas en memoria en lugar de DynamoDB.</p>
+  <p>Los dos "móviles" hacen de WhatsApp y Meta. Detrás corre el código desplegado: el router Lambda lee los mismos webhooks, el agente usa Claude real y el send Lambda arma los mismos mensajes de la API de Meta, que aquí se validan como lo haría Meta. Solo se cambian los clientes de AWS, y ElevenLabs reemplaza a Transcribe.</p>
   <button class="btn" id="reset">Reiniciar todo</button>
 </header>
 
 <div class="diagram" aria-label="Pipeline">
-  <span class="node" data-node="in"><b>Entrada</b><small>web (WhatsApp)</small></span><span class="arrow">→</span>
-  <span class="node" data-node="voice"><b>Voz</b><small>ElevenLabs (Transcribe)</small></span><span class="arrow">→</span>
-  <span class="node" data-node="agent"><b>Agente</b><small>Claude · Strands</small></span><span class="arrow">→</span>
+  <span class="node" data-node="in"><b>WhatsApp / Meta</b><small>emulado en la web</small></span><span class="arrow">→</span>
+  <span class="node" data-node="router"><b>SNS → router Lambda</b><small>código real</small></span><span class="arrow">→</span>
+  <span class="node" data-node="voice"><b>Transcripción</b><small>ElevenLabs (Transcribe)</small></span><span class="arrow">→</span>
+  <span class="node" data-node="agent"><b>AgentCore</b><small>Claude · Strands</small></span><span class="arrow">→</span>
   <span class="node" data-node="tool"><b>Herramientas</b><small>hechos · conciliación</small></span><span class="arrow">→</span>
-  <span class="node" data-node="out"><b>Salida</b><small>canal web (Lambda send)</small></span>
+  <span class="node" data-node="out"><b>send Lambda → Meta</b><small>validado como Meta</small></span>
 </div>
 
 <div class="layout">
@@ -126,7 +132,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     <div class="phone-head"><span class="avatar">A</span><div>Conductor A<small>+1 000 000 0001 · español</small></div><span class="typing">escribiendo…</span></div>
     <div class="chat"></div>
     <details class="script" open><summary>Guion de demo</summary><div class="lines"></div></details>
-    <form class="composer"><input placeholder="Mensaje" autocomplete="off"><button type="button" class="round mic" title="Grabar nota de voz">🎤</button><button class="round" title="Enviar">➤</button></form>
+    <form class="composer"><input placeholder="Mensaje" autocomplete="off"><input type="file" accept="image/*" hidden><button type="button" class="round photo" title="Enviar foto">📷</button><button type="button" class="round mic" title="Grabar nota de voz">🎤</button><button class="round" title="Enviar">➤</button></form>
   </section>
 
   <section class="middle">
@@ -138,7 +144,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     <div class="phone-head"><span class="avatar">B</span><div>Conductor B<small>+1 000 000 0002 · english</small></div><span class="typing">typing…</span></div>
     <div class="chat"></div>
     <details class="script" open><summary>Demo script</summary><div class="lines"></div></details>
-    <form class="composer"><input placeholder="Message" autocomplete="off"><button type="button" class="round mic" title="Record a voice note">🎤</button><button class="round" title="Send">➤</button></form>
+    <form class="composer"><input placeholder="Message" autocomplete="off"><input type="file" accept="image/*" hidden><button type="button" class="round photo" title="Send a photo">📷</button><button type="button" class="round mic" title="Record a voice note">🎤</button><button class="round" title="Send">➤</button></form>
   </section>
 </div>
 
@@ -175,12 +181,12 @@ const SCRIPT = {
   ],
 };
 const STAGES = {
-  media: ["voice", "Nota de voz recibida"], tts: ["voice", "Voz de ejemplo generada"],
+  router: ["router", "Webhook"], tts: ["in", "Voz de ejemplo generada"],
   transcribe: ["voice", "Transcripción"], agent: ["agent", "Agente pensando"],
-  agent_done: ["agent", "Agente terminó"], tool: ["tool", "Herramienta"],
-  deliver: ["out", "Envío"], error: ["agent", "Error"],
+  agent_done: ["agent", "Agente terminó"], tool: ["tool", "Herramienta"], error: ["out", "Error"],
 };
-let last = 0, caseId = "", lastReconciled = null;
+let last = 0, caseId = "", lastReconciled = null, flowDef = null;
+const sent = {};
 const $ = (s, el = document) => el.querySelector(s);
 const phone = who => $(`.phone[data-who="${who}"]`);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
@@ -207,37 +213,71 @@ function bubble(who, dir, inner, cls = "") {
   return div;
 }
 
-function addMessage(e) {
-  if (e.audio) {
-    bubble(e.who, e.dir, `<audio controls src="${esc(e.audio)}"></audio><div class="transcript" data-audio="${esc(e.audio)}">transcribiendo…</div><div class="meta">🎤 ${time()}</div>`);
+function jsonBox(label, obj) {
+  return `<details><summary>${label}</summary><pre>${esc(JSON.stringify(obj, null, 2))}</pre></details>`;
+}
+
+// What a phone sent, as the webhook Meta posts for it
+function addInbound(e) {
+  let inner;
+  if (e.type === "audio") inner = `<audio controls src="/media/${esc(e.mediaId)}"></audio><div class="transcript" data-media="${esc(e.mediaId)}">transcribiendo…</div>`;
+  else if (e.type === "image") inner = `<img src="/media/${esc(e.mediaId)}" alt="foto">`;
+  else if (e.type === "form") inner = `📋 ${e.form.decision === "approve" ? "Apruebo" : "Algo está mal"}${e.form.comment ? ` — ${esc(e.form.comment)}` : ""}`;
+  else inner = esc(e.text);
+  bubble(e.who, "in", `${inner}<div class="meta">${time()}</div>${jsonBox("webhook de Meta", e.webhook)}`);
+}
+
+// What the send Lambda sent, as the Cloud API body Meta accepted
+function addOutbound(e) {
+  const b = e.body, ticks = `<span class="ticks" data-msg="${esc(e.messageId)}">✓</span>`;
+  if (b.type === "interactive") {
+    const i = b.interactive, p = i.action.parameters;
+    const el = bubble(e.who, "out", `<b>${esc(i.header?.text)}</b>${esc(i.body.text)}<button class="cta">${esc(p.flow_cta)}</button>
+      <div class="meta">${p.mode === "draft" ? "Flow en borrador · " : ""}${time()} ${ticks}</div>${jsonBox("mensaje a Meta", b)}`, "formcard");
+    $(".cta", el).onclick = () => openFlow(e.who, p);
     return;
   }
-  const speak = e.dir === "out" ? `<button class="speak" title="Escuchar">🔊</button>` : "";
-  const el = bubble(e.who, e.dir, `${esc(e.text)}<div class="meta">${e.form ? "📋 formulario · " : ""}${speak}${time()}</div>`);
-  const btn = $(".speak", el);
-  if (btn) btn.onclick = () => play(e.text, btn);
-  const code = e.dir === "out" && (e.text || "").match(/JOIN[ %20]+([A-Z0-9]{6})/);
+  const text = b.text.body;
+  const el = bubble(e.who, "out", `${esc(text)}<div class="meta"><button class="speak" title="Escuchar">🔊</button>${time()} ${ticks}</div>${jsonBox("mensaje a Meta", b)}`);
+  $(".speak", el).onclick = ev => play(text, ev.currentTarget);
+  const code = text.match(/JOIN[ %20]+([A-Z0-9]{6})/);
   if (code) { caseId = code[1]; renderScript("B"); }
 }
 
-function addForm(e) {
-  const i = e.interactive, data = i.action.parameters.flow_action_payload.data;
-  const el = bubble(e.who, "out", `<b>${esc(i.header.text)}</b>${esc(i.body.text)}<button class="cta">${esc(i.action.parameters.flow_cta)}</button>`, "formcard");
-  $(".cta", el).onclick = () => openForm(e.who, i.action.parameters.flow_token, data);
+// Fill ${data.x} from the message, as WhatsApp does when it opens the Flow
+function bind(value, data) {
+  if (typeof value !== "string") return value;
+  const whole = value.match(/^\$\{data\.(\w+)\}$/);
+  if (whole) return data[whole[1]];
+  return value.replace(/\$\{data\.(\w+)\}/g, (_, k) => data[k] ?? "");
 }
 
-function openForm(who, token, d) {
-  $("#flow-title").textContent = d.heading;
-  $("#flow-body").innerHTML = `<p>${esc(d.intro)}</p>${md(d.agreed)}${md(d.disputed)}
-    <h3>${esc(d.decision_label)}</h3>
-    ${d.options.map((o, n) => `<label><input type="radio" name="decision" value="${esc(o.id)}" ${n ? "" : "required"}> ${esc(o.title)}</label>`).join("")}
-    <h3>${esc(d.comment_label)}</h3><textarea name="comment"></textarea>`;
-  $("#flow-submit").textContent = d.submit_label;
+async function openFlow(who, params) {
+  if (!flowDef) flowDef = await (await fetch("/api/flow")).json();
+  const screen = flowDef.screens.find(sc => sc.id === params.flow_action_payload.screen);
+  const data = params.flow_action_payload.data;
+  let html = "", footer = null;
+  for (const c of screen.layout.children) {
+    const text = bind(c.text, data), label = bind(c.label, data);
+    if (c.type === "TextSubheading") html += `<h3>${esc(text)}</h3>`;
+    else if (c.type === "TextBody") html += c.markdown ? md(text) : `<p>${esc(text)}</p>`;
+    else if (c.type === "RadioButtonsGroup") html += `<h3>${esc(label)}</h3>` + bind(c["data-source"], data).map((o, n) =>
+        `<label><input type="radio" name="${esc(c.name)}" value="${esc(o.id)}" ${c.required && !n ? "required" : ""}> ${esc(o.title)}</label>`).join("");
+    else if (c.type === "TextArea") html += `<h3>${esc(label)}</h3><textarea name="${esc(c.name)}" ${c.required ? "required" : ""}></textarea>`;
+    else if (c.type === "Footer") footer = c;
+  }
+  $("#flow-title").textContent = screen.title;
+  $("#flow-body").innerHTML = html;
+  $("#flow-submit").textContent = bind(footer.label, data);
   const form = $("#flow-form");
   form.onsubmit = ev => {
     ev.preventDefault();
-    const f = new FormData(form);
-    post("/api/message", {who, form: {flow_token: token, decision: f.get("decision"), comment: f.get("comment") || ""}});
+    const f = new FormData(form), answer = {};
+    // The complete action's payload with ${form.x} filled in, plus the flow_token, is what Meta sends back
+    for (const [k, v] of Object.entries(footer["on-click-action"].payload)) {
+      answer[k] = String(v).replace(/\$\{form\.(\w+)\}/g, (_, name) => f.get(name) || "");
+    }
+    post("/api/message", {who, form: {flow_token: params.flow_token, ...answer}});
     $("#flow").close();
   };
   $("#flow").showModal();
@@ -254,6 +294,7 @@ function addStep(e) {
     detail = e.tool === "reconcile_case" ? "compara las dos versiones en código" : JSON.stringify(e.input);
     if (e.result && !e.result.startsWith("{")) detail += ` → ${e.result}`;
   }
+  if (e.meta) detail += " " + JSON.stringify(e.meta).slice(0, 300);
   log.insertAdjacentHTML("beforeend", `<div class="step ${e.stage === "error" ? "error" : ""}"><span class="who ${esc(e.who)}">${esc(e.who || "·")}</span><div class="what">${what} <span class="detail">${esc(detail)}</span></div></div>`);
   log.scrollTop = log.scrollHeight;
 }
@@ -281,14 +322,14 @@ function renderCase(c) {
 }
 
 function handle(e) {
-  if (e.kind === "msg") addMessage(e);
-  else if (e.kind === "form") addForm(e);
-  else if (e.kind === "transcript") { const t = document.querySelector(`.transcript[data-audio="${CSS.escape(e.audio)}"]`); if (t) t.textContent = `«${e.text}»`; }
+  if (e.kind === "msg_in") { addInbound(e); highlight("in"); }
+  else if (e.kind === "wa_out") { addOutbound(e); highlight("out"); }
+  else if (e.kind === "status") { const t = document.querySelector(`.ticks[data-msg="${CSS.escape(e.messageId)}"]`); if (t) { t.textContent = e.status === "sent" ? "✓" : "✓✓"; t.className = `ticks ${e.status}`; } }
+  else if (e.kind === "transcript") { const t = document.querySelector(`.transcript[data-media="${CSS.escape(e.mediaId)}"]`); if (t) t.textContent = `«${e.text}»`; }
   else if (e.kind === "typing") $(".typing", phone(e.who)).classList.toggle("on", e.on);
   else if (e.kind === "stage") addStep(e);
   else if (e.kind === "case") renderCase(e);
   else if (e.kind === "reset") resetView();
-  if (e.kind === "stage" && (e.stage === "media" || e.stage === "tts") || e.kind === "msg" && e.dir === "in") highlight("in");
 }
 
 function resetView() {
@@ -344,6 +385,14 @@ for (const who of ["A", "B"]) {
     if (!input.value.trim()) return;
     post("/api/message", {who, text: input.value.trim()});
     input.value = "";
+  };
+  const file = $("input[type=file]", p);
+  $(".photo", p).onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files[0];
+    if (!f) return;
+    await fetch(`/api/image?who=${who}`, {method: "POST", headers: {"Content-Type": f.type || "image/jpeg"}, body: f});
+    file.value = "";
   };
   let rec = null;
   $(".mic", p).onclick = async ev => {

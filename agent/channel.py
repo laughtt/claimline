@@ -1,9 +1,9 @@
 """Where the agent's outbound messages go: WhatsApp or the local web prototype.
 
 WHATSAPP_ON=1 (the deployed runtime, and the default) sends through the send
-Lambda to WhatsApp. WHATSAPP_ON=0 hands every message to the channel the local
-pipeline registered with use(), so the agent and its tools run unchanged
-without WhatsApp.
+Lambda to WhatsApp. WHATSAPP_ON=0 uses the channel the local prototype
+registered with use(); pipeline/server.py registers the same WhatsAppChannel
+with an in-process send Lambda that talks to an emulated Meta.
 """
 
 import json
@@ -20,9 +20,12 @@ class Channel(Protocol):
 
 
 class WhatsAppChannel:
-    def __init__(self):
-        import boto3
-        self.lambda_ = boto3.client("lambda")
+    def __init__(self, lambda_client=None):
+        """lambda_client: the local prototype passes one that runs the send Lambda in its process."""
+        if lambda_client is None:
+            import boto3
+            lambda_client = boto3.client("lambda")
+        self.lambda_ = lambda_client
 
     def send(self, to, text=None, interactive=None):
         message = {"channel": "whatsapp", "to": to}

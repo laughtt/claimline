@@ -39,23 +39,26 @@ Then set the WABA event destination to the SNS topic `test-claimline-inbound`.
 | `agent/reconcile.py` | A vs B fact reconciliation, plain code |
 | `tests/` | Unit tests |
 
-## Local prototype without WhatsApp (`WHATSAPP_ON=0`)
+## Local WhatsApp prototype (`WHATSAPP_ON=0`)
 
-While WhatsApp access is limited, `pipeline/` runs BothSides in the browser: two phones (A in Spanish, B in English) talk to the same agent, prompts, tools and reconciliation as the deployed runtime, with real Claude on Bedrock. The page shows each step of every message (voice, agent, tools, delivery), the saved facts and the comparison.
+While WhatsApp access is limited, `pipeline/` runs BothSides in the browser. The page's two phones (A in Spanish, B in English) play WhatsApp and Meta; everything after Meta is the deployed code, run in one process:
+
+1. A phone's message becomes the webhook entry Meta posts, and SNS hands it to **`lambdas/router/handler.py`**, unchanged: dedupe, media copy, transcription, the AgentCore payload, the form reply and delivery statuses.
+2. The **agent** runs with the same prompts, tools and reconciliation, on real Claude in Bedrock.
+3. **`lambdas/send/handler.py`**, unchanged, builds each Cloud API message. The emulated Meta checks it before the page shows it: the 24-hour window, text and button limits, and the review form against `flows/approval.json` (screen, data fields and types). The page then opens the form from that same Flow definition and answers with the `nfm_reply` WhatsApp sends.
 
 ```powershell
 .venv\Scripts\python -m pipeline.server     # then open http://localhost:8765
 ```
 
-Only the edges are swapped, each behind a small interface:
+Only the AWS clients are swapped (`pipeline/fake_aws.py`):
 
-| Edge | `WHATSAPP_ON=1` (deployed) | `WHATSAPP_ON=0` (local) | Interface |
-|---|---|---|---|
-| Outbound messages | send Lambda → WhatsApp | the web page | `agent/channel.py` (`Channel`, `use()`) |
-| Inbound messages | router Lambda | `pipeline/router.py` (same payload, same `main.invoke`) | the AgentCore payload |
-| Voice notes | Amazon Transcribe | ElevenLabs speech to text | `pipeline/voice.py` (`Transcriber`) |
-| Sample voice notes | — | ElevenLabs text to speech | `pipeline/voice.py` (`Speaker`) |
-| Tables and history | DynamoDB + AgentCore Memory | in memory | `pipeline/memory_store.py`, `main.LOCAL_HISTORY` |
-| Review form | WhatsApp Flow | rendered by the page from the same message | `send_approval_form` |
+| Service | Deployed | Local |
+|---|---|---|
+| WhatsApp / Meta (EUM Social) | real | `pipeline/meta.py`, the page |
+| S3, DynamoDB, Lambda invoke | AWS | in memory, in process |
+| Transcribe | AWS | ElevenLabs speech to text (`pipeline/voice.py`), answering as a Transcribe job |
+| AgentCore Runtime + Memory | AWS | `agent.main.invoke` in process, history in `main.LOCAL_HISTORY` |
+| Sample voice notes | — | ElevenLabs text to speech |
 
-The ElevenLabs key is read from `ELEVENLABS_API_KEY` or `~/.claimline/env` (one line `ELEVENLABS_API_KEY=...`), never from the repo. The deployed runtime sets `WHATSAPP_ON=1`; when WhatsApp is available, test on the phones and the local server isn't needed.
+The ElevenLabs key is read from `ELEVENLABS_API_KEY` or `~/.claimline/env` (one line `ELEVENLABS_API_KEY=...`), never from the repo. The deployed runtime sets `WHATSAPP_ON=1` (`agent/channel.py`); when WhatsApp is available, test on the phones and this server isn't needed. What the emulator can't tell is whether real WhatsApp opens a Flow still in draft: that needs a phone.

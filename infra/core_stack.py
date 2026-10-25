@@ -146,7 +146,7 @@ class CoreStack(Stack):
             function_name=fn_name,
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="handler.handler",
-            code=lambda_.Code.from_asset(f"lambdas/{folder}"),
+            code=lambda_.Code.from_asset(f"lambdas/{folder}", exclude=["__pycache__"]),
             role=role,
             log_group=log_group,
             timeout=timeout,

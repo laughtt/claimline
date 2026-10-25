@@ -1,10 +1,14 @@
-r"""Local web prototype of BothSides, for while WhatsApp access is limited.
+r"""Local WhatsApp prototype of BothSides, for while WhatsApp access is limited.
 
-Two phones in the browser talk to the same agent, prompts, tools and
-reconciliation as the deployed one, with real Claude on Bedrock. Only the edges
-change: the web page instead of WhatsApp, ElevenLabs instead of Transcribe, and
-in-memory tables instead of DynamoDB. Once WhatsApp is available, the deployed
-runtime runs with WHATSAPP_ON=1 and this server isn't needed.
+The web page's two phones play WhatsApp and Meta. Everything after Meta is the
+deployed code, run in this process: the router Lambda reads the same webhook
+entries, the agent runs with the same prompts, tools and reconciliation on
+real Claude, and the send Lambda builds the same Cloud API messages. Only the
+AWS clients are fakes (pipeline/fake_aws.py), voice notes are transcribed by
+ElevenLabs instead of Transcribe, and Meta's checks are emulated (pipeline/meta.py).
+
+WHATSAPP_ON=0 is this prototype. Once WhatsApp is available, the deployed stack
+(WHATSAPP_ON=1 in the runtime) takes over and this server isn't needed.
 
 Usage, from the repo root: .venv\Scripts\python -m pipeline.server   (then open http://localhost:8765)
 """
@@ -20,18 +24,19 @@ from urllib.parse import parse_qs, urlparse
 
 os.environ.setdefault("WHATSAPP_ON", "0")
 if os.environ["WHATSAPP_ON"] == "1":
-    sys.exit("WHATSAPP_ON=1: messages go through WhatsApp and the deployed router; this prototype isn't used.")
+    sys.exit("WHATSAPP_ON=1: messages go through WhatsApp and the deployed stack; this prototype isn't used.")
 os.environ.setdefault("AWS_PROFILE", "test")
 os.environ.setdefault("AWS_REGION", "eu-west-1")
 os.environ.setdefault("AWS_DEFAULT_REGION", "eu-west-1")
 os.environ["MEMORY_ID"] = ""
 os.environ.setdefault("MODEL_ID", "eu.anthropic.claude-opus-5-5")
-# Any id makes send_approval_form send the form; the web page renders it instead of WhatsApp
-os.environ.setdefault("APPROVAL_FLOW_ID", "local-flow")
+# The same Flow and mode as infra/agent_stack.py, so the emulated Meta checks what production sends
+os.environ.setdefault("APPROVAL_FLOW_ID", "29183837704562024")
+os.environ.setdefault("APPROVAL_FLOW_MODE", "draft")
 
 from agent import channel, main  # noqa: E402
-from pipeline import memory_store, voice  # noqa: E402
-from pipeline.router import MEDIA_DIR, LocalRouter  # noqa: E402
+from pipeline import fake_aws, lambdas, memory_store, voice  # noqa: E402
+from pipeline.meta import MEDIA_DIR, FakeMeta  # noqa: E402
 
 PORT = int(os.environ.get("PORT", "8765"))
 WEB = pathlib.Path(__file__).parent / "web" / "index.html"
@@ -56,41 +61,66 @@ class EventLog:
             return self.events[last:]
 
 
-class WebChannel:
-    """The channel the agent sends through when WHATSAPP_ON=0: straight to the page."""
-
-    def __init__(self, log: EventLog):
-        self.log = log
-
-    def send(self, to, text=None, interactive=None):
-        who = WHO.get(to, to)
-        if interactive:
-            self.log.emit({"kind": "stage", "who": who, "stage": "deliver", "detail": f"formulario de revisión → {who}"})
-            self.log.emit({"kind": "form", "who": who, "interactive": interactive})
-        else:
-            self.log.emit({"kind": "stage", "who": who, "stage": "deliver", "detail": f"mensaje → {who}"})
-            self.log.emit({"kind": "msg", "who": who, "dir": "out", "text": text})
-
-
 log = EventLog()
-channel.use(WebChannel(log))
 memory_store.install()
 speaker = voice.get_speaker()
-router = LocalRouter(PHONES, voice.get_transcriber(), log.emit)
-# One turn at a time, in arrival order, like one driver after the other on WhatsApp
+
+router = lambdas.router()
+send = lambdas.send()
+meta = FakeMeta(PHONES, os.environ["APPROVAL_FLOW_ID"], "51992861202", send.PHONE_NUMBER_ID, log.emit)
+s3 = fake_aws.FakeS3()
+meta.s3 = s3
+lambda_client = fake_aws.FakeLambda({router.SEND_FUNCTION: send.handler}, log.emit)
+router.ddb = fake_aws.FakeDynamoClient()
+router.social = meta
+router.s3 = s3
+router.transcribe_ = fake_aws.FakeTranscribe(s3, voice.get_transcriber(), WHO, log.emit)
+router.agentcore = fake_aws.FakeAgentCore(WHO, log.emit)
+router.lambda_ = lambda_client
+send.social = meta
+# Statuses come back through the router, as Meta's webhooks do
+meta.status_sink = lambda payload: router.handle_whatsapp(payload)
+
+# The agent's own messages (to the other driver, the review form) go through the send Lambda too
+channel.use(channel.WhatsAppChannel(lambda_client))
+
+# One message at a time, in arrival order
 turns: queue.Queue = queue.Queue()
+
+
+def deliver(who: str, message: dict, shown: dict) -> None:
+    """A phone sends one WhatsApp message: Meta posts the webhook to SNS, SNS invokes the router."""
+    sns_message = meta.webhook(who, message)
+    entry = json.loads(sns_message["whatsAppWebhookEntry"])
+    log.emit({"kind": "msg_in", "who": who, **shown, "webhook": entry})
+    log.emit({"kind": "stage", "who": who, "stage": "router", "detail": f"webhook {message['type']} → SNS → router Lambda"})
+    router.handler({"Records": [{"Sns": {"Message": json.dumps(sns_message)}}]}, None)
 
 
 def worker():
     while True:
         job = turns.get()
+        who = job["who"]
         try:
-            if job.pop("sample", None):
-                log.emit({"kind": "stage", "who": job["who"], "stage": "tts", "detail": "voz de ejemplo con ElevenLabs"})
-                job.update(audio=speaker.speak(job.pop("text"), job["who"]), mime="audio/mpeg")
-            router.handle(**job)
+            if job.get("sample"):
+                log.emit({"kind": "stage", "who": who, "stage": "tts", "detail": "voz de ejemplo con ElevenLabs"})
+                job.update(audio=speaker.speak(job["text"], who), mime="audio/mpeg")
+            if job.get("audio"):
+                media_id = meta.upload(job["audio"], job["mime"])
+                deliver(who, meta.media_message("audio", media_id), {"type": "audio", "mediaId": media_id})
+            elif job.get("image"):
+                media_id = meta.upload(job["image"], job["mime"])
+                deliver(who, meta.media_message("image", media_id), {"type": "image", "mediaId": media_id})
+            elif job.get("form"):
+                form = job["form"]
+                reply = {"type": "interactive", "interactive": {"type": "nfm_reply", "nfm_reply": {
+                    "name": "flow", "body": "Sent", "response_json": json.dumps(form, ensure_ascii=False)}}}
+                deliver(who, reply, {"type": "form", "form": form})
+            else:
+                deliver(who, {"type": "text", "text": {"body": job["text"]}}, {"type": "text", "text": job["text"]})
         except Exception as e:
-            log.emit({"kind": "stage", "who": job.get("who"), "stage": "error", "detail": f"{type(e).__name__}: {e}"})
+            log.emit({"kind": "stage", "who": who, "stage": "error", "detail": f"{type(e).__name__}: {e}"})
+        log.emit({"kind": "turn_done", "who": who})
 
 
 threading.Thread(target=worker, daemon=True).start()
@@ -119,37 +149,38 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, WEB.read_bytes(), "text/html; charset=utf-8")
         elif url.path == "/api/events":
             after = int(parse_qs(url.query).get("after", ["0"])[0])
-            self._json({"events": log.after(after), "mode": "WHATSAPP_ON=0", "phones": PHONES})
+            self._json({"events": log.after(after), "phones": PHONES})
+        elif url.path == "/api/flow":
+            self._json(meta.flow)
         elif url.path.startswith("/media/"):
-            path = MEDIA_DIR / pathlib.Path(url.path).name
-            if not path.is_file():
+            media_id = pathlib.Path(url.path).name
+            if media_id not in meta.media:
                 return self._send(404)
-            types = {".mp3": "audio/mpeg", ".webm": "audio/webm", ".ogg": "audio/ogg", ".m4a": "audio/mp4"}
-            self._send(200, path.read_bytes(), types.get(path.suffix, "application/octet-stream"))
+            data, mime = meta.media[media_id]
+            self._send(200, data, mime.split(";")[0])
         else:
             self._send(404)
 
     def do_POST(self):
         url = urlparse(self.path)
-        query = parse_qs(url.query)
+        who = parse_qs(url.query).get("who", [""])[0]
         if url.path == "/api/message":
             data = json.loads(self._body())
-            if data.get("who") not in PHONES:
-                return self._json({"error": "who must be A or B"}, 400)
-            job = {"who": data["who"]}
-            if data.get("form"):
-                job["form"] = data["form"]
-            elif data.get("voice"):
-                job.update(sample=True, text=data["text"])
-            else:
-                job["text"] = data.get("text", "")
-            turns.put(job)
-            self._json({"queued": True}, 202)
-        elif url.path == "/api/voice":
-            who = query.get("who", [""])[0]
+            who = data.get("who")
             if who not in PHONES:
                 return self._json({"error": "who must be A or B"}, 400)
-            turns.put({"who": who, "audio": self._body(), "mime": self.headers.get("Content-Type", "audio/webm")})
+            if data.get("form"):
+                turns.put({"who": who, "form": data["form"]})
+            elif data.get("voice"):
+                turns.put({"who": who, "sample": True, "text": data["text"]})
+            else:
+                turns.put({"who": who, "text": data.get("text", "")})
+            self._json({"queued": True}, 202)
+        elif url.path in ("/api/voice", "/api/image"):
+            if who not in PHONES:
+                return self._json({"error": "who must be A or B"}, 400)
+            kind = "audio" if url.path == "/api/voice" else "image"
+            turns.put({"who": who, kind: self._body(), "mime": self.headers.get("Content-Type", "")})
             self._json({"queued": True}, 202)
         elif url.path == "/api/speak":
             data = json.loads(self._body())
@@ -167,5 +198,6 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Claimline local prototype (WHATSAPP_ON=0) on http://localhost:{PORT}")
+    MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"Claimline local WhatsApp prototype (WHATSAPP_ON=0) on http://localhost:{PORT}")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
