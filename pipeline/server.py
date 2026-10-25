@@ -25,7 +25,10 @@ from urllib.parse import parse_qs, urlparse
 os.environ.setdefault("WHATSAPP_ON", "0")
 if os.environ["WHATSAPP_ON"] == "1":
     sys.exit("WHATSAPP_ON=1: messages go through WhatsApp and the deployed stack; this prototype isn't used.")
-os.environ.setdefault("AWS_PROFILE", "test")
+# Our shared account's profile when it exists; anyone else uses their usual AWS credentials
+if "[profile test]" in (pathlib.Path.home() / ".aws" / "config").read_text(errors="ignore") \
+        if (pathlib.Path.home() / ".aws" / "config").exists() else False:
+    os.environ.setdefault("AWS_PROFILE", "test")
 os.environ.setdefault("AWS_REGION", "eu-west-1")
 os.environ.setdefault("AWS_DEFAULT_REGION", "eu-west-1")
 os.environ["MEMORY_ID"] = ""
@@ -63,6 +66,7 @@ class EventLog:
 
 log = EventLog()
 memory_store.install()
+# Both None without an ElevenLabs key: the prototype then runs on text only
 speaker = voice.get_speaker()
 
 router = lambdas.router()
@@ -106,6 +110,8 @@ def worker():
         who = job["who"]
         try:
             if job.get("sample"):
+                if not speaker:
+                    raise RuntimeError("No ElevenLabs key, so sample voice notes are off; use the text buttons")
                 log.emit({"kind": "stage", "who": who, "stage": "tts", "detail": "voz de ejemplo con ElevenLabs"})
                 job.update(audio=speaker.speak(job["text"], who), mime="audio/mpeg")
             if job.get("audio"):
@@ -152,7 +158,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, WEB.read_bytes(), "text/html; charset=utf-8")
         elif url.path == "/api/events":
             after = int(parse_qs(url.query).get("after", ["0"])[0])
-            self._json({"events": log.after(after), "phones": PHONES})
+            self._json({"events": log.after(after), "phones": PHONES, "voice": speaker is not None})
         elif url.path == "/api/flow":
             self._json(meta.flow)
         elif url.path.startswith("/media/"):
@@ -187,6 +193,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"queued": True}, 202)
         elif url.path == "/api/speak":
             data = json.loads(self._body())
+            if not speaker:
+                return self._json({"error": "no ElevenLabs key"}, 503)
             try:
                 self._send(200, speaker.speak(data["text"][:1200], data.get("voice", "agent")), "audio/mpeg")
             except RuntimeError as e:

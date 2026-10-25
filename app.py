@@ -13,9 +13,10 @@ core = CoreStack(app, "TestClaimlineCore", stack_name=naming.name("core"), env=e
 # The shared account refuses resources without this tag
 cdk.Tags.of(app).add(*naming.OWNER_TAG)
 
-# CloudFormation may only create roles capped by the deploy policy
-iam.PermissionsBoundary.of(core).apply(
-    iam.ManagedPolicy.from_managed_policy_name(core, "Boundary", naming.name("deploy"))
-)
+# In the shared account, CloudFormation may only create roles capped by this policy;
+# another account deploys without it: -c permissionsBoundary=
+boundary = app.node.try_get_context("permissionsBoundary")
+if boundary:
+    iam.PermissionsBoundary.of(core).apply(iam.ManagedPolicy.from_managed_policy_name(core, "Boundary", boundary))
 
 app.synth()

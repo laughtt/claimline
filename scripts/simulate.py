@@ -7,9 +7,13 @@ Usage, from the repo root: .venv\\Scripts\\python scripts\\simulate.py
 
 import json
 import os
+import pathlib
 import sys
 
-os.environ.setdefault("AWS_PROFILE", "test")
+# Our shared account's profile when it exists; anyone else uses their usual AWS credentials
+if "[profile test]" in (pathlib.Path.home() / ".aws" / "config").read_text(errors="ignore") \
+        if (pathlib.Path.home() / ".aws" / "config").exists() else False:
+    os.environ.setdefault("AWS_PROFILE", "test")
 os.environ.setdefault("AWS_REGION", "eu-west-1")
 os.environ.setdefault("AWS_DEFAULT_REGION", "eu-west-1")
 os.environ["MEMORY_ID"] = ""
@@ -47,6 +51,8 @@ PHONES = {"A": "+10000000001", "B": "+10000000002"}
 VOICE_LANGUAGES = {"A": "es-US", "B": "en-US"}
 # Keyed like the AgentCore Memory session: one history per case and role
 history = {}
+# Bedrock tokens across the run, for the cost note
+usage = {}
 
 
 def turn(who, text, voice=False, form=None):
@@ -74,7 +80,10 @@ def turn(who, text, voice=False, form=None):
     elif voice:
         message = main.describe({"type": "audio", "mediaKey": media_key,
                                  "transcript": {"text": text, "language": VOICE_LANGUAGES[who]}})
-    reply = str(agent(message)).strip()
+    result = agent(message)
+    for k, v in result.metrics.accumulated_usage.items():
+        usage[k] = usage.get(k, 0) + v
+    reply = str(result).strip()
     history[session] = agent.messages
     print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]{' (nota de voz)' if voice else ''}: {text}")
     for m in agent.messages[start:]:

@@ -80,9 +80,16 @@ class ElevenLabs:
                           body, "application/json")
 
 
-def get_transcriber() -> Transcriber:
-    return ElevenLabs()
+def get_transcriber() -> Transcriber | None:
+    """None without a key: voice notes then can't be transcribed and the agent asks the driver to type."""
+    try:
+        return ElevenLabs()
+    except RuntimeError:
+        return None
 
 
-def get_speaker() -> Speaker:
-    return ElevenLabs()
+def get_speaker() -> Speaker | None:
+    try:
+        return ElevenLabs()
+    except RuntimeError:
+        return None

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Claimline architecture</title>
+<!-- Source of docs/architecture.png: render at 1600x1000 (see docs/architecture/README.md). -->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff; font: 14px/1.35 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; color: #232f3e; }
+  #canvas { position: relative; width: 1600px; height: 1000px; background: #ffffff; overflow: hidden; }
+  .title { position: absolute; left: 40px; top: 18px; font-size: 26px; font-weight: 700; }
+  .subtitle { position: absolute; left: 40px; top: 56px; font-size: 14px; color: #5f6b7a; width: 360px; }
+  .region { position: absolute; left: 430px; top: 50px; width: 1140px; height: 920px; border: 2px solid #8c4fff; border-radius: 6px; }
+  .region-label { position: absolute; left: 446px; top: 58px; font-size: 13px; font-weight: 600; color: #8c4fff; }
+  .box { position: absolute; background: #fff; border: 1.5px solid #c7ccd1; border-radius: 10px; padding: 10px 12px; text-align: center; }
+  .box img { width: 52px; height: 52px; display: block; margin: 2px auto 6px; }
+  .box b { display: block; font-size: 14px; }
+  .box small { display: block; font-size: 12px; color: #5f6b7a; margin-top: 2px; }
+  .box.ext { background: #f4f6f8; }
+  .box.agent { border: 2px solid #01a88d; background: #f2fbf8; }
+  .box.next { border-style: dashed; background: #fafafa; opacity: .9; }
+  .phone { font-size: 34px; line-height: 52px; height: 52px; margin-bottom: 6px; }
+  .panel { position: absolute; border: 1.5px dashed #9aa5b1; border-radius: 10px; }
+  .panel-label { position: absolute; font-size: 12px; font-weight: 600; color: #5f6b7a; background: #fff; padding: 0 6px; }
+  .tile { position: absolute; width: 136px; text-align: center; }
+  .tile img { width: 44px; height: 44px; display: block; margin: 0 auto 4px; }
+  .tile b { display: block; font-size: 13px; }
+  .tile small { display: block; font-size: 11.5px; color: #5f6b7a; }
+  .note { position: absolute; background: #fff8e6; border: 1.5px solid #f2c14e; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; }
+  .note b { display: block; font-size: 13.5px; margin-bottom: 4px; }
+  svg { position: absolute; left: 0; top: 0; }
+  .lbl { font-size: 11.5px; fill: #3b4754; }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="title">Claimline · BothSides</div>
+  <div class="subtitle">Two drivers, two languages, one neutral joint report over WhatsApp. Everything in one AWS CDK stack.</div>
+
+  <!-- Outside AWS -->
+  <div class="box ext" style="left:40px;top:160px;width:150px;height:128px"><div class="phone">📱</div><b>Driver A</b><small>Spanish · text, voice, photos</small></div>
+  <div class="box ext" style="left:40px;top:318px;width:150px;height:128px"><div class="phone">📱</div><b>Driver B</b><small>English · joins with a code</small></div>
+  <div class="box ext" style="left:230px;top:240px;width:170px;height:120px"><div class="phone">💬</div><b>WhatsApp (Meta)</b><small>Cloud API</small></div>
+  <div class="box ext" style="left:230px;top:440px;width:170px;height:128px"><div class="phone">📋</div><b>WhatsApp Flow</b><small>approval form, one for every language</small></div>
+
+  <!-- AWS -->
+  <div class="region"></div>
+  <div class="region-label">AWS · eu-west-1 · stack test-claimline-core</div>
+
+  <div class="box" style="left:460px;top:230px;width:170px;height:145px"><img src="icons/eum.png" alt=""><b>End User Messaging Social</b><small>WhatsApp number</small></div>
+  <div class="box" style="left:680px;top:230px;width:170px;height:145px"><img src="icons/sns.png" alt=""><b>Amazon SNS</b><small>inbound topic</small></div>
+  <div class="box" style="left:900px;top:230px;width:170px;height:145px"><img src="icons/lambda.png" alt=""><b>Router Lambda</b><small>dedupe · media · voice · form replies · delivery statuses</small></div>
+  <div class="box agent" style="left:1120px;top:205px;width:260px;height:195px"><img src="icons/bedrock.png" alt=""><b>Bedrock AgentCore Runtime</b><small>Strands agent · Claude Opus 5.5 on Amazon Bedrock</small><small>tools: record_fact · reconcile_case · message_other_driver · send_approval_form · handoff_human</small></div>
+  <div class="box" style="left:900px;top:62px;width:170px;height:128px"><img src="icons/lambda.png" alt=""><b>Send Lambda</b><small>the only sender: text, form, PDF</small></div>
+
+  <div class="panel" style="left:460px;top:440px;width:610px;height:150px"></div>
+  <div class="panel-label" style="left:476px;top:431px">used by the router</div>
+  <div class="tile" style="left:470px;top:462px"><img src="icons/s3.png" alt=""><b>Amazon S3</b><small>photos, voice notes, transcripts</small></div>
+  <div class="tile" style="left:620px;top:462px"><img src="icons/transcribe.png" alt=""><b>Amazon Transcribe</b><small>voice notes, es / en detected</small></div>
+  <div class="tile" style="left:770px;top:462px"><img src="icons/dynamodb.png" alt=""><b>DynamoDB</b><small>messages: each one handled once</small></div>
+  <div class="tile" style="left:920px;top:462px"><img src="icons/sqs.png" alt=""><b>Amazon SQS</b><small>dead-letter queue</small></div>
+
+  <div class="panel" style="left:1100px;top:440px;width:450px;height:150px"></div>
+  <div class="panel-label" style="left:1116px;top:431px">used by the agent</div>
+  <div class="tile" style="left:1108px;top:462px"><img src="icons/bedrock.png" alt=""><b>AgentCore Memory</b><small>history per driver per case</small></div>
+  <div class="tile" style="left:1256px;top:462px"><img src="icons/dynamodb.png" alt=""><b>DynamoDB</b><small>cases · drivers · facts with quotes</small></div>
+  <div class="tile" style="left:1404px;top:462px"><img src="icons/s3.png" alt=""><b>Amazon S3</b><small>joint report PDF</small></div>
+
+  <div class="box next" style="left:460px;top:640px;width:250px;height:135px"><img src="icons/ses.png" alt=""><b>Amazon SES (next)</b><small>report to both insurers, adjuster replies back to WhatsApp</small></div>
+  <div class="box" style="left:730px;top:640px;width:250px;height:135px"><img src="icons/cloudwatch.png" alt=""><b>CloudWatch Logs</b><small>one JSON line per message: case, role, event</small></div>
+  <div class="box" style="left:1000px;top:640px;width:250px;height:135px"><img src="icons/cdk.png" alt=""><b>AWS CDK</b><small>one stack, one command: cdk deploy</small></div>
+  <div class="note" style="left:1270px;top:640px;width:280px;height:200px"><b>Reconciliation is plain code</b>Each fact is AGREED, ONLY A, ONLY B or CONFLICT by rules (10 km/h, 10 min, both lights green). Claude only judges whether two free-text values mean the same. The PDF is built in code from those rows and the drivers' own words.</div>
+  <div class="note" style="left:460px;top:805px;width:790px;height:95px"><b>Local prototype (WHATSAPP_ON=0)</b>A web page plays WhatsApp and Meta; the same router, agent and send code runs in one process with in-memory AWS clients, and Meta's checks (24-hour window, Flow schema) are emulated. Speech uses ElevenLabs instead of Transcribe.</div>
+
+  <svg width="1600" height="1000" viewBox="0 0 1600 1000">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b4754"/></marker>
+      <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#01a88d"/></marker>
+    </defs>
+    <g stroke="#3b4754" stroke-width="2" fill="none">
+      <path d="M190,224 L230,285" marker-end="url(#a)" marker-start="url(#a)"/>
+      <path d="M190,382 L230,335" marker-end="url(#a)" marker-start="url(#a)"/>
+      <path d="M400,300 L460,300" marker-end="url(#a)" marker-start="url(#a)"/>
+      <path d="M315,360 L315,440" marker-end="url(#a)" marker-start="url(#a)" stroke-dasharray="5 4"/>
+      <path d="M630,300 L680,300" marker-end="url(#a)"/>
+      <path d="M850,300 L900,300" marker-end="url(#a)"/>
+      <path d="M1070,300 L1120,300" marker-end="url(#a)"/>
+      <path d="M985,230 L985,190" marker-end="url(#a)"/>
+      <path d="M1180,205 L1180,126 L1070,126" marker-end="url(#a)"/>
+      <path d="M900,126 L545,126 L545,230" marker-end="url(#a)"/>
+      <path d="M985,375 L985,440" marker-end="url(#a)"/>
+      <path d="M1245,400 L1245,440" marker-end="url(#a)"/>
+    </g>
+    <text class="lbl" x="404" y="290">webhook / send</text>
+    <text class="lbl" x="634" y="290">event</text>
+    <text class="lbl" x="1074" y="290">invoke</text>
+    <text class="lbl" x="992" y="214">reply</text>
+    <text class="lbl" x="1188" y="152">messages to the other</text>
+    <text class="lbl" x="1188" y="166">driver, form, PDF</text>
+    <text class="lbl" x="580" y="117">SendWhatsAppMessage · PostWhatsAppMessageMedia</text>
+    <text class="lbl" x="322" y="404">nfm_reply</text>
+  </svg>
+</div>
+</body>
+</html>

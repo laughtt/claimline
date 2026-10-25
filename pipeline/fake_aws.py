@@ -78,7 +78,7 @@ class FakeTranscribe:
         who = self.who_by_phone.get("+" + key.split("/")[2])
         media_id = self.s3.media_ids.get(key)
         started = time.time()
-        result = self.transcriber.transcribe(data, mime)
+        result = self.transcriber.transcribe(data, mime) if self.transcriber else None
         job = {"TranscriptionJobName": TranscriptionJobName, "TranscriptionJobStatus": "FAILED",
                "FailureReason": "no speech recognised"}
         if result:

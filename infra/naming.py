@@ -2,10 +2,13 @@
 
 Every resource must start with ``test`` and S3 buckets with ``test-eng-``,
 otherwise the account refuses to create them. Keep all names here.
+Another account deploys by setting CLAIMLINE_ACCOUNT (and CLAIMLINE_REGION).
 """
 
-ACCOUNT = "888564397690"
-REGION = "eu-west-1"
+import os
+
+ACCOUNT = os.environ.get("CLAIMLINE_ACCOUNT", "888564397690")
+REGION = os.environ.get("CLAIMLINE_REGION", "eu-west-1")
 OWNER_TAG = ("Owner", "test")
 
 PREFIX = "test-claimline"

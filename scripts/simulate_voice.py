@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from simulate import REPORTS_DIR, cases, forms_sent, print_facts, turn  # noqa: E402
+from simulate import REPORTS_DIR, cases, forms_sent, print_facts, turn, usage  # noqa: E402
 
 turn("A", "RESET")
 turn("B", "RESET")
@@ -52,3 +52,4 @@ assert "door" in damage["A"] and "mirror" in damage["A"], f"both damaged parts k
 assert "bumper" in damage["B"] and "headlight" in damage["B"], f"both damaged parts kept: {damage['B']}"
 assert all(f["evidence"][0]["type"] == "voice" for f in cases.facts_table.items.values()
            if f["party"] == "A" and f["field"] != "third_party_plate"), "driver A spoke every fact but the typed plate"
+print(f"### Bedrock tokens for the whole case (agent turns): {usage}")

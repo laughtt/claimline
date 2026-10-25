@@ -208,7 +208,7 @@ const SCRIPTS = {
     ],
   },
 };
-let scenario = "semaforo";
+let scenario = "semaforo", voiceOn = true;
 const STAGES = {
   router: ["router", "Webhook"], tts: ["in", "Voz de ejemplo generada"],
   transcribe: ["voice", "Transcripción"], agent: ["agent", "Agente pensando"],
@@ -380,6 +380,7 @@ async function poll() {
     try {
       const r = await fetch(`/api/events?after=${last}`);
       const data = await r.json();
+      if (data.voice !== voiceOn) { voiceOn = data.voice; renderScript("A"); renderScript("B"); }
       for (const e of data.events) { last = e.id; handle(e); }
     } catch { await new Promise(r => setTimeout(r, 2000)); }
   }
@@ -404,7 +405,7 @@ function renderScript(who) {
     const text = raw.replace("{code}", caseId || "······");
     const row = document.createElement("div");
     row.className = "line";
-    row.innerHTML = `<span>${esc(text)}</span>${voice ? `<button data-v="1">🎙 voz</button>` : ""}<button>✍ texto</button>`;
+    row.innerHTML = `<span>${esc(text)}</span>${voice && voiceOn ? `<button data-v="1">🎙 voz</button>` : ""}<button>✍ texto</button>`;
     row.querySelectorAll("button").forEach(b => b.onclick = () => {
       if (text.includes("······")) return alert("Primero A tiene que abrir el caso y recibir el código JOIN.");
       post("/api/message", b.dataset.v ? {who, text, voice: true} : {who, text});
