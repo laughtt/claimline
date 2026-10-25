@@ -87,13 +87,13 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
     <li>Hackathon <b>AWS CDS Agentic AI</b></li>
     <li>Demo: <b>dom 25 oct 2026</b></li>
     <li>Entrega: <b>mar 27 oct 2026</b></li>
-    <li>Estado al <b>24 oct</b></li>
-    <li>Último commit <b>17e3262</b></li>
+    <li>Estado al <b>24 oct, noche</b></li>
+    <li>Último commit <b>1d7b46b</b></li>
   </ul>
   <nav>
     <a href="#que">Qué es</a><a href="#como">Cómo funciona</a><a href="#arq">Arquitectura</a>
     <a href="#estado">Estado</a><a href="#avance">Avance</a><a href="#aprobacion">Aprobación</a>
-    <a href="#pruebas">Pruebas</a><a href="#pendiente">Pendiente</a><a href="#porque">Por qué necesito el móvil</a>
+    <a href="#prototipo">Prototipo</a><a href="#pruebas">Pruebas</a><a href="#pendiente">Pendiente</a><a href="#porque">Por qué hace falta un móvil</a>
     <a href="#codigo">Código</a><a href="#reglas">Reglas</a>
   </nav>
 </header>
@@ -125,6 +125,7 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
     <li><b>Comparación en código, no por el modelo.</b> Cada hecho queda como <i>coinciden</i>, <i>solo A</i>, <i>solo B</i> o <i>en conflicto</i>. Se toleran 10 km/h y 10 minutos de diferencia. Si los dos dicen que su semáforo estaba en verde, es un conflicto.</li>
     <li><b>Preguntas neutrales.</b> Sobre cada conflicto se pregunta una sola vez a cada conductor, sin decir quién tiene razón.</li>
     <li><b>Placas y daños.</b> Las placas se piden por escrito, porque la voz las puede entender mal. Los daños se guardan completos por vehículo.</li>
+    <li><b>Terceros.</b> Si alguien menciona a un peatón, ciclista o animal, lo que hizo y el motivo de la maniobra se guardan y se comparan como cualquier dato, sin culpar a nadie.</li>
     <li><b>Aprobación en un formulario de WhatsApp.</b> Cada conductor revisa el borrador en su idioma y lo aprueba o pide cambios.</li>
     <li><b>Informe a las aseguradoras</b> en PDF por email (SES) <span class="tag todo">pendiente</span>.</li>
   </ol>
@@ -172,8 +173,10 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
     <tr><td>Comparación de versiones</td><td><span class="tag ok">hecho</span></td><td>Tests y móviles reales</td></tr>
     <tr><td>Notas de voz (Transcribe)</td><td><span class="tag ok">hecho</span></td><td>Móvil real el 24 oct, español e inglés</td></tr>
     <tr><td>RESET entre ensayos</td><td><span class="tag ok">hecho</span></td><td>Móviles reales</td></tr>
-    <tr><td>Formulario de aprobación</td><td><span class="tag wip">desplegado, sin probar en móvil</span></td><td>Simulación con Claude real; falta ver si se abre en WhatsApp</td></tr>
-    <tr><td>Rechazo del informe y paso a una persona</td><td><span class="tag wip">desplegado, sin probar en móvil</span></td><td>Simulación y tests</td></tr>
+    <tr><td>Formulario de aprobación</td><td><span class="tag wip">hecho, sin probar en móvil</span></td><td>Simulación y prototipo (pulsando la página); falta ver si WhatsApp abre el Flow en borrador</td></tr>
+    <tr><td>Rechazo del informe y paso a una persona</td><td><span class="tag ok">hecho</span></td><td>Simulación y tests</td></tr>
+    <tr><td>Escenario del peatón</td><td><span class="tag ok">hecho</span></td><td>Simulación y prototipo</td></tr>
+    <tr><td>Prototipo local de WhatsApp</td><td><span class="tag ok">hecho</span></td><td>Recorrido completo en el navegador con el código real</td></tr>
     <tr><td>Informe PDF y envío por SES</td><td><span class="tag todo">pendiente</span></td><td>Falta que el compañero verifique correos en SES</td></tr>
     <tr><td>First Call</td><td><span class="tag todo">pendiente</span></td><td>Opcional</td></tr>
   </table></div>
@@ -210,6 +213,10 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
         <li>El agente ya no promete que el informe "se envía a las aseguradoras", porque eso aún no existe.</li>
         <li>Rechazos: queda claro que aprobar no es darle la razón al otro, y el caso pasa a una persona tras dos rechazos sin corrección.</li>
         <li>Handover para el compañero y GitHub al día.</li>
+        <li>Prototipo local de WhatsApp: la web hace de WhatsApp y Meta, y detrás corren el router, el agente y el send Lambda reales. Voz con ElevenLabs.</li>
+        <li>El router registra los estados de entrega de Meta, con el motivo si falla.</li>
+        <li>Escenario del peatón, con selector de escenario en el prototipo.</li>
+        <li>El agente guarda cada dato de un mensaje largo antes de responder.</li>
       </ul></li>
   </ul>
 </section>
@@ -225,14 +232,35 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
   <p>Cada formulario lleva un código <code>&lt;caso&gt;-&lt;rol&gt;</code>, así que un formulario de un caso anterior no puede aprobar el caso nuevo.</p>
 </section>
 
+<section id="prototipo">
+  <h2>Prototipo local de WhatsApp</h2>
+  <p>Como el acceso a WhatsApp está limitado, <code>python -m pipeline.server</code> abre en <code>http://localhost:8765</code> dos "móviles" (A en español, B en inglés) que hacen de WhatsApp y de Meta. Detrás corre el código desplegado, sin cambios.</p>
+  <div class="flow" aria-label="Recorrido en el prototipo">
+    <span class="box"><b>Web</b>WhatsApp y Meta</span><span class="arrow">→</span>
+    <span class="box"><b>Router Lambda</b>código real</span><span class="arrow">→</span>
+    <span class="box"><b>ElevenLabs</b>en lugar de Transcribe</span><span class="arrow">→</span>
+    <span class="box"><b>Agente</b>Claude real</span><span class="arrow">→</span>
+    <span class="box"><b>Send Lambda</b>código real</span><span class="arrow">→</span>
+    <span class="box"><b>Meta emulado</b>valida cada mensaje</span>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Qué comprueba</h3><p>El formato real de los webhooks, la ventana de 24 horas, los límites de texto y el formulario contra el Flow real. La página abre el formulario a partir de ese mismo Flow.</p></div>
+    <div class="card"><h3>Qué permite</h3><p>Notas de voz (grabadas o generadas), fotos, el JSON de cada mensaje, el paso a paso de cada mensaje y dos escenarios: "Los dos en verde" y "Frenazo por un peatón".</p></div>
+    <div class="card"><h3>Qué no puede decir</h3><p>Si el WhatsApp real abre un formulario que sigue en borrador. Eso necesita un móvil.</p></div>
+  </div>
+  <p>El interruptor <code>WHATSAPP_ON</code> separa los dos mundos: el runtime desplegado lleva <code>1</code> y el prototipo <code>0</code>.</p>
+</section>
+
 <section id="pruebas">
   <h2>Cómo se ha comprobado</h2>
   <div class="table-wrap"><table>
     <tr><th>Prueba</th><th>Qué cubre</th><th>Resultado</th></tr>
-    <tr><td>22 tests unitarios</td><td>Comparación, transcripción, formulario, rechazos</td><td><span class="tag ok">pasan</span></td></tr>
+    <tr><td>30 tests unitarios</td><td>Comparación, transcripción, formulario, rechazos, canal, Meta emulado</td><td><span class="tag ok">pasan</span></td></tr>
     <tr><td><code>scripts/simulate.py</code></td><td>A en español y B en inglés por texto, con Claude real</td><td><span class="tag ok">pasa</span></td></tr>
     <tr><td><code>scripts/simulate_voice.py</code></td><td>El guion casi entero por voz, hasta que los dos aprueban</td><td><span class="tag ok">pasa</span></td></tr>
     <tr><td><code>scripts/simulate_refusal.py</code></td><td>Un conductor que no acepta el informe</td><td><span class="tag ok">pasa</span></td></tr>
+    <tr><td><code>scripts/simulate_pedestrian.py</code></td><td>Frenazo por un peatón que solo vio A</td><td><span class="tag ok">pasa</span></td></tr>
+    <tr><td>Prototipo, pulsando la página</td><td>Los dos escenarios hasta que los dos aprueban</td><td><span class="tag ok">funciona</span></td></tr>
     <tr><td>Dos móviles reales</td><td>Texto, voz, comparación y RESET</td><td><span class="tag ok">funciona</span></td></tr>
     <tr><td>Dos móviles reales</td><td>Formulario de aprobación</td><td><span class="tag wip">pendiente</span></td></tr>
   </table></div>
@@ -243,14 +271,16 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
   <h2>Pendiente</h2>
   <div class="table-wrap"><table>
     <tr><th>Tarea</th><th>Quién</th><th>Para cuándo</th></tr>
-    <tr><td>Probar el formulario de aprobación con los dos móviles</td><td>Equipo + Claude</td><td>Antes de grabar</td></tr>
+    <tr><td>Ensayar y grabar la demo con el prototipo</td><td>Equipo</td><td>Dom 25</td></tr>
+    <tr><td>Probar el formulario de aprobación en un móvil real</td><td>Equipo + Claude</td><td>Cuando haya WhatsApp</td></tr>
     <tr><td>Publicar el Flow si el modo borrador no se abre (irreversible: luego solo se puede clonar)</td><td>Decisión del equipo</td><td>Antes de grabar</td></tr>
     <tr><td>Informe PDF y envío por SES; si SES no llega, el PDF por WhatsApp</td><td>Claude</td><td>Antes de grabar</td></tr>
     <tr><td>Verificar en SES el remitente y dos correos de "aseguradora"</td><td>Compañero (admin)</td><td>Urgente</td></tr>
-    <tr><td>Registrar los avisos de entrega de Meta en los logs</td><td>Claude</td><td>Antes de la prueba con móviles</td></tr>
     <tr><td>Plazo para quien nunca responde (por ejemplo, 24 h)</td><td>—</td><td>Después de la demo</td></tr>
     <tr><td>Spec, README, JUDGE_TEST, ORIGINAL_WORK y diagrama</td><td>Claude</td><td>Antes del 27</td></tr>
     <tr><td>Rotar la access key compartida, MFA, alerta de presupuesto de $50</td><td>Compañero (admin)</td><td>Cuanto antes</td></tr>
+    <tr><td>Rotar la clave de ElevenLabs</td><td>Equipo</td><td>Después de la demo</td></tr>
+    <tr><td>Avisar a una persona real en HANDOFF, atropello con un solo conductor, guardrails, First Call</td><td>—</td><td>Siguientes pasos</td></tr>
   </table></div>
   <h3>Riesgos</h3>
   <div class="table-wrap"><table>
@@ -258,13 +288,14 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
     <tr><td>El formulario en borrador no se abre en WhatsApp</td><td>Publicarlo con <code>scripts/flow.py --publish</code> y cambiar el modo a <code>published</code></td></tr>
     <tr><td>SES no se verifica a tiempo</td><td>Enviar el PDF por WhatsApp como documento</td></tr>
     <tr><td>Las notas de voz tardan 15–30 s más</td><td>Mezclar texto y voz en la grabación, o recortar las esperas</td></tr>
+    <tr><td>Sin acceso a WhatsApp para grabar</td><td>Grabar con el prototipo local</td></tr>
     <tr><td>Coste de Opus 5.5</td><td>Alerta de presupuesto; Sonnet 5.5 si se activa en Marketplace</td></tr>
   </table></div>
 </section>
 
 <section id="porque">
-  <h2>Por qué necesito el número de un móvil y un "hola"</h2>
-  <p>Es la única duda que no pueden resolver ni los tests ni las simulaciones: <b>si WhatsApp abre el formulario mientras está en borrador</b>. Las simulaciones no hablan con Meta; solo un mensaje real lo dice.</p>
+  <h2>Por qué hace falta un móvil (y un "hola")</h2>
+  <p>Es la única duda que no resuelven ni los tests, ni las simulaciones, ni el prototipo: <b>si WhatsApp abre el formulario mientras está en borrador</b>. Meta emulado comprueba el formato, pero solo un mensaje real dice si el borrador se abre.</p>
   <ol class="steps">
     <li><b>El número</b> es el destinatario de un formulario de prueba que le mandaría directamente desde AWS, sin pasar por toda la conversación. No puedo sacarlo de los casos guardados porque el usuario <code>test</code> no tiene permiso para leer DynamoDB.</li>
     <li><b>El "hola"</b> abre la ventana de 24 horas de WhatsApp. Fuera de esa ventana, Meta no deja enviar mensajes interactivos (como el formulario) sin una plantilla aprobada, y el envío fallaría por eso y no por el formulario.</li>
@@ -287,8 +318,10 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
     <tr><td><code>lambdas/router</code>, <code>lambdas/send</code></td><td>Entrada (con Transcribe) y salida de mensajes</td></tr>
     <tr><td><code>flows/approval.json</code>, <code>scripts/flow.py</code></td><td>El formulario de WhatsApp y el script que lo crea y publica</td></tr>
     <tr><td><code>infra/</code>, <code>app.py</code></td><td>La pila de CDK, los nombres y las etiquetas</td></tr>
-    <tr><td><code>scripts/simulate*.py</code></td><td>Simulaciones con Claude real, sin tocar AWS</td></tr>
-    <tr><td><code>tests/</code></td><td>22 tests unitarios</td></tr>
+    <tr><td><code>agent/channel.py</code></td><td>Por dónde salen los mensajes (<code>WHATSAPP_ON</code>)</td></tr>
+    <tr><td><code>pipeline/</code></td><td>Prototipo local de WhatsApp: Meta emulado, servicios de AWS en memoria, voz con ElevenLabs y la página</td></tr>
+    <tr><td><code>scripts/simulate*.py</code></td><td>Simulaciones con Claude real, sin tocar AWS: texto, voz, rechazo y peatón</td></tr>
+    <tr><td><code>tests/</code></td><td>30 tests unitarios</td></tr>
     <tr><td><code>HANDOVER.md</code>, <code>docs/PROMPT_CONTEXTO.md</code></td><td>Para el compañero y para retomar con Claude</td></tr>
   </table></div>
 </section>
@@ -304,7 +337,7 @@ footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
   </ul>
 </section>
 
-<footer>Claimline · estado al 24 de octubre de 2026 · commit 17e3262</footer>
+<footer>Claimline · estado al 24 de octubre de 2026 (noche) · commit 1d7b46b</footer>
 </main>
 </body>
 </html>
