@@ -80,8 +80,11 @@ class CoreStack(Stack):
         # Send Lambda: the only place that talks to the channels
         self.send_fn = self._function(
             "Send", "send",
-            env={"WABA_PHONE_NUMBER_ID": waba_phone_number_id, "META_API_VERSION": "v20.0"},
+            env={"WABA_PHONE_NUMBER_ID": waba_phone_number_id, "META_API_VERSION": "v20.0",
+                 "MEDIA_BUCKET": self.media_bucket.bucket_name},
         )
+        # EUM Social reads a document (the report PDF) from S3 with the caller's permissions
+        self.media_bucket.grant_read(self.send_fn)
         self.send_fn.add_to_role_policy(iam.PolicyStatement(
             actions=["social-messaging:SendWhatsAppMessage", "social-messaging:PostWhatsAppMessageMedia"],
             resources=["*"],
@@ -92,7 +95,8 @@ class CoreStack(Stack):
         ))
 
         # Agent on AgentCore Runtime + Memory
-        self.agent = AgentConstruct(self, "Agent", tables=self.tables, send_fn=self.send_fn)
+        self.agent = AgentConstruct(self, "Agent", tables=self.tables, send_fn=self.send_fn,
+                                    media_bucket=self.media_bucket)
 
         # Router Lambda: dedupe, media to S3, hand off to the agent
         self.router_fn = self._function(

@@ -19,7 +19,7 @@ Es nuestra entrada al hackathon **AWS CDS Agentic AI**: un agente de IA que tram
   4. compara las versiones (`agent/reconcile.py`): de acuerdo, solo A, solo B o en conflicto;
   5. pregunta a los dos solo por los conflictos, sin culpar a nadie;
   6. los dos aprueban el parte en un formulario de WhatsApp (Flow): aprobar significa "recoge lo que dijo cada uno", no aceptar la versión del otro;
-  7. envía el informe a las dos aseguradoras (PDF + SES, pendiente).
+  7. al aprobar los dos, les manda el informe en PDF por WhatsApp; el envío a las aseguradoras por SES está pendiente.
 - **First Call (segunda demo, opcional).** El asegurado avisa a su aseguradora por WhatsApp. Antes manda "ALTA", que abre la ventana de 24 horas y permite botones sin plantillas aprobadas.
 
 **Por qué WhatsApp va por AWS:** el premio de Meta exige **AWS End User Messaging Social**. No valen WhatsApp Web, librerías no oficiales (whatsapp-web.js, Baileys) ni intermediarios como Twilio.
@@ -34,7 +34,8 @@ Es nuestra entrada al hackathon **AWS CDS Agentic AI**: un agente de IA que tram
 | BothSides de punta a punta | **Funciona** con dos móviles reales (caso ZM4X65, 23 de octubre) |
 | Notas de voz | **Funcionan** con móvil real desde el 24 de octubre: Transcribe las pasa a texto en unos 12 s |
 | Reinicio entre ensayos | Enviar `RESET` desde cada teléfono abre un caso nuevo |
-| Informe PDF y envío por SES | Pendiente; falta SES (3.1) |
+| Informe PDF | **Hecho**: al aprobar los dos, se genera y llega a los dos conductores por WhatsApp |
+| Envío del informe a las aseguradoras por SES | Pendiente; falta SES (3.1) |
 | Formulario de aprobación (WhatsApp Flow) | **Hecho** en simulación y en el prototipo; en borrador, **falta probarlo en un móvil real** |
 | Rechazo del informe | Tras dos rechazos sin corrección, el caso pasa a una persona y se avisa a los dos |
 | Escenario del peatón | Lo que hizo un peatón, ciclista o animal se guarda y compara, sin culpar a nadie |
@@ -179,7 +180,8 @@ Todo va en la cuenta **888564397690**, usuario `test`, región **eu-west-1**.
 | `pipeline/` | Prototipo local de WhatsApp (Meta emulado, servicios de AWS en memoria, voz con ElevenLabs, la página web) |
 | `agent/reconcile.py`, `agent/judge.py` | Comparación de versiones; Claude decide si dos textos libres dicen lo mismo |
 | `scripts/simulate*.py` | Simulan a los dos conductores con Claude real, sin tocar AWS: texto, voz, rechazo y peatón |
-| `tests/` | 30 tests |
+| `agent/report.py` | Informe PDF del parte conjunto, generado en código |
+| `tests/` | 35 tests |
 | `docs/PROMPT_CONTEXTO.md` | Contexto para retomar el proyecto en una sesión nueva de Claude |
 
 **Comandos:**

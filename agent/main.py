@@ -14,7 +14,7 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
 from strands.models import BedrockModel
 
-from agent import cases, prompts
+from agent import cases, prompts, report
 from agent.tools import HANDOFF_CONTACT, build_tools
 
 REGION = os.environ.get("AWS_REGION", "eu-west-1")
@@ -111,9 +111,11 @@ def record_form(party, form) -> dict | None:
     decisions = cases.set_approval(party, decision, (form.get("comment") or "").strip())
     if handoff:
         cases.set_status(party.case_id, "HANDOFF", f"Driver {party.role} rejected the report twice without a correction")
+    # The second approval closes the case: the PDF goes to both drivers before the agent answers
+    sent = bool(decisions.get("A") == decisions.get("B") == "approve" and report.deliver(party.case_id))
     print(json.dumps({"event": "form", "caseId": party.case_id, "role": party.role, "approvals": decisions,
-                      "handoff": handoff}))
-    return {"approvals": decisions, "handoff": handoff}
+                      "handoff": handoff, "reportSent": sent}))
+    return {"approvals": decisions, "handoff": handoff, "report_sent": sent}
 
 
 def tool_calls(messages) -> list[dict]:
@@ -171,7 +173,12 @@ def describe(payload) -> str:
         other = next((d for role, d in decisions.items() if role != form["flow_token"][-1]), "not answered yet")
         return (f"[The driver submitted the review form: {'approved the report' if form.get('decision') == 'approve' else 'asked for changes'}"
                 f"{f', with this comment: {comment}' if comment else ', no comment'}. "
-                f"The other driver's answer: {other}.]")
+                f"The other driver's answer: {other}."
+                + (" Both drivers have approved and the PDF of the joint report has just been sent to both of "
+                   "them in this chat; they can keep it or forward it to their insurer. Nobody has sent it to "
+                   "an insurer.]" if review.get("report_sent") else
+                   " Both drivers have approved, but the PDF couldn't be generated; say a person will send it.]"
+                   if decisions.get("A") == decisions.get("B") == "approve" else "]"))
     if kind == "location":
         return f"[The driver shared a location pin: {payload.get('location')}]"
     if payload.get("mediaKey"):

@@ -84,6 +84,15 @@ class FakeMeta:
         self.s3.put(key, data, mime.split(";")[0].strip(), media_id=mediaId)
         return {"mimeType": mime, "fileSize": len(data)}
 
+    def post_whatsapp_message_media(self, originationPhoneNumberId, sourceS3File):
+        """Upload a file from S3 to WhatsApp, as the send Lambda does for the report PDF."""
+        key = sourceS3File["key"]
+        if key not in self.s3.objects:
+            raise ClientError({"Error": {"Code": "ResourceNotFoundException", "Message": f"No S3 object {key}"}},
+                              "PostWhatsAppMessageMedia")
+        data, mime = self.s3.objects[key]
+        return {"mediaId": self.upload(data, mime)}
+
     def send_whatsapp_message(self, originationPhoneNumberId, message, metaApiVersion):
         body = json.loads(message)
         to = body.get("to", "")
@@ -128,6 +137,12 @@ class FakeMeta:
                 raise meta_error(100, f"text.body must be 1 to {TEXT_LIMIT} characters")
         elif kind == "interactive":
             self._check_flow(body.get("interactive") or {})
+        elif kind == "document":
+            doc = body.get("document") or {}
+            if doc.get("id") not in self.media:
+                raise meta_error(131053, "Media upload error: unknown media id")
+            if not doc.get("filename") or len(doc.get("caption", "")) > 1024:
+                raise meta_error(100, "document needs a filename and a caption of at most 1024 characters")
         else:
             raise meta_error(100, f"type {kind} isn't one the agent sends")
 

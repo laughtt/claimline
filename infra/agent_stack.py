@@ -12,6 +12,7 @@ from aws_cdk import (
     aws_dynamodb as ddb,
     aws_iam as iam,
     aws_lambda as lambda_,
+    aws_s3 as s3,
 )
 from constructs import Construct
 
@@ -29,7 +30,7 @@ APPROVAL_FLOW_MODE = "draft"
 
 class AgentConstruct(Construct):
     def __init__(self, scope: Construct, construct_id: str, *, tables: dict[str, ddb.Table],
-                 send_fn: lambda_.IFunction) -> None:
+                 send_fn: lambda_.IFunction, media_bucket: s3.IBucket) -> None:
         super().__init__(scope, construct_id)
 
         memory_role = iam.Role(
@@ -71,6 +72,8 @@ class AgentConstruct(Construct):
         for suffix in ("cases", "parties", "facts"):
             tables[suffix].grant_read_write_data(role)
         send_fn.grant_invoke(role)
+        # The report PDF is written under reports/
+        media_bucket.grant_put(role, "reports/*")
 
         self.runtime = agentcore.Runtime(
             self, "Runtime",
@@ -97,6 +100,7 @@ class AgentConstruct(Construct):
                 "APPROVAL_FLOW_MODE": APPROVAL_FLOW_MODE,
                 # Outbound through the send Lambda; the local prototype runs with 0
                 "WHATSAPP_ON": "1",
+                "MEDIA_BUCKET": media_bucket.bucket_name,
             },
         )
 

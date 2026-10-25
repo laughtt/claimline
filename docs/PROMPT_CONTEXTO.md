@@ -10,7 +10,7 @@ Claimline es un agente de IA que tramita partes de accidente de coche por WhatsA
   4. compara las versiones en código;
   5. pregunta solo por los conflictos, sin culpar a nadie;
   6. manda a cada uno un formulario de WhatsApp (Flow) para aprobar el informe;
-  7. (pendiente) envía el informe en PDF a las dos aseguradoras.
+  7. al aprobar los dos, genera el informe en PDF (`agent/report.py`, sin modelo) y lo manda a los dos por WhatsApp; el envío a las aseguradoras por SES sigue pendiente.
 - **First Call (segunda demo, opcional):** el asegurado avisa a su aseguradora por WhatsApp.
 - WhatsApp va por AWS End User Messaging Social porque el premio de Meta lo exige. Nada de WhatsApp Web, Baileys ni Twilio.
 - La spec está en https://claude.ai/artifact/WFr85iB6Fy4Pp2m7ThAQte (copia en `docs/spec.html`). Todavía dice us-east-1, pero la región real es eu-west-1.
@@ -60,7 +60,8 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 | `flows/approval.json`, `scripts/flow.py` | El formulario de WhatsApp y el script que lo crea y publica |
 | `pipeline/` | Prototipo local de WhatsApp |
 | `scripts/simulate*.py` | Simulaciones con Claude real, sin tocar AWS: texto, voz, rechazo y peatón |
-| `tests/` | 30 tests |
+| `agent/report.py` | Informe PDF del parte conjunto: secciones de la conciliación, citas de cada conductor, aprobaciones; se guarda en `reports/` del bucket y se envía a los dos |
+| `tests/` | 35 tests |
 
 ## Estado
 - BothSides funciona de punta a punta con dos móviles reales (caso ZM4X65, 23 de octubre) y con notas de voz reales (24 de octubre).
@@ -90,7 +91,7 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 Desde Git Bash, usar `MSYS_NO_PATHCONV=1` en los comandos de `aws logs`. El bucket de medios es RETAIN: si falla un primer despliegue, queda huérfano y hay que borrarlo.
 
 ## Pendiente
-1. **Informe PDF** del parte conjunto al aprobar los dos: descarga en el prototipo y envío por WhatsApp como documento; por email con SES si el compañero verifica los correos.
+1. Envío del informe PDF a las aseguradoras por SES, cuando el compañero verifique los correos. El PDF ya se genera y llega a los dos conductores por WhatsApp.
 2. Ensayar y grabar la demo con el prototipo (domingo 25).
 3. Probar el formulario en un móvil real y decidir si se publica.
 4. `JUDGE_TEST.md`, `ORIGINAL_WORK.md`, diagrama de arquitectura, README final y spec con eu-west-1.

@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from simulate import cases, forms_sent, print_facts, turn  # noqa: E402
+from simulate import REPORTS_DIR, cases, forms_sent, print_facts, turn  # noqa: E402
 
 turn("A", "RESET")
 turn("B", "RESET")
@@ -42,6 +42,9 @@ assert "light" in forms["B"]["disputed"].lower(), f"B sees the light dispute: {f
 turn("A", "", form={"decision": "approve", "comment": ""})
 turn("B", "", form={"decision": "approve", "comment": "I had just started moving when the light turned green."})
 assert cases.cases_table.items[(party_a.case_id,)]["status"] == "APPROVED", "both approved"
+pdf = REPORTS_DIR / party_a.case_id / f"Claimline-{party_a.case_id}.pdf"
+assert pdf.exists() and pdf.read_bytes().startswith(b"%PDF"), "the report PDF was built"
+print(f"\n### Informe PDF: {pdf}")
 print_facts()
 damage = {who: cases.facts_table.items[(party_a.case_id, f"{who}#damage_part@{who}")]["value"]
           for who in ("A", "B")}

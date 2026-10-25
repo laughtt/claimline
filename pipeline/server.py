@@ -34,7 +34,7 @@ os.environ.setdefault("MODEL_ID", "eu.anthropic.claude-opus-5-5")
 os.environ.setdefault("APPROVAL_FLOW_ID", "29183837704562024")
 os.environ.setdefault("APPROVAL_FLOW_MODE", "draft")
 
-from agent import channel, main  # noqa: E402
+from agent import channel, main, report  # noqa: E402
 from pipeline import fake_aws, lambdas, memory_store, voice  # noqa: E402
 from pipeline.meta import MEDIA_DIR, FakeMeta  # noqa: E402
 
@@ -78,6 +78,9 @@ router.transcribe_ = fake_aws.FakeTranscribe(s3, voice.get_transcriber(), WHO, l
 router.agentcore = fake_aws.FakeAgentCore(WHO, log.emit)
 router.lambda_ = lambda_client
 send.social = meta
+# The report PDF is written to the same in-memory bucket the send Lambda uploads it from
+report.s3 = s3
+report.MEDIA_BUCKET = router.MEDIA_BUCKET
 # Statuses come back through the router, as Meta's webhooks do
 meta.status_sink = lambda payload: router.handle_whatsapp(payload)
 

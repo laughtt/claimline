@@ -16,17 +16,25 @@ os.environ["MEMORY_ID"] = ""
 os.environ["MODEL_ID"] = "eu.anthropic.claude-opus-5-5"
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent import cases, channel, main, tools  # noqa: E402
+from agent import cases, channel, main, report, tools  # noqa: E402
 from pipeline import memory_store  # noqa: E402
+from pipeline.fake_aws import S3_DIR, FakeS3  # noqa: E402
 
 memory_store.install()
+# The report PDF lands in pipeline/.data/s3/reports/<case>/ instead of the media bucket
+report.s3 = FakeS3()
+report.MEDIA_BUCKET = "local"
+REPORTS_DIR = S3_DIR / "reports"
 
 outbox = []
 
 
 class FakeChannel:
-    def send(self, to, text=None, interactive=None):
-        outbox.append({"to": to, "interactive": interactive} if interactive else {"to": to, "text": text})
+    def send(self, to, text=None, interactive=None, document=None):
+        if document:
+            outbox.append({"to": to, "document": document})
+        else:
+            outbox.append({"to": to, "interactive": interactive} if interactive else {"to": to, "text": text})
 
 
 channel.use(FakeChannel())
@@ -79,7 +87,9 @@ def turn(who, text, voice=False, form=None):
                     print(f"   [reconcile] {res}")
     while outbox:
         sent = outbox.pop(0)
-        if "interactive" in sent:
+        if "document" in sent:
+            print(f"   [PDF a {sent['to']}] {sent['document']['filename']}: {sent['document']['caption']}")
+        elif "interactive" in sent:
             data = sent["interactive"]["action"]["parameters"]["flow_action_payload"]["data"]
             forms_sent.append((party.role, data))
             print(f"   [Formulario a {who}] {sent['interactive']['body']['text']} | boton: "

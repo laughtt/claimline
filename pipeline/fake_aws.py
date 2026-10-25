@@ -37,6 +37,9 @@ class FakeS3:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
 
+    def put_object(self, Bucket, Key, Body, ContentType="application/octet-stream"):
+        self.put(Key, Body, ContentType)
+
     def list_objects_v2(self, Bucket, Prefix):
         keys = sorted(k for k in self.objects if k.startswith(Prefix))
         return {"Contents": [{"Key": k} for k in keys]} if keys else {}

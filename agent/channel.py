@@ -15,8 +15,10 @@ SEND_FUNCTION = os.environ.get("SEND_FUNCTION", "test-claimline-send")
 
 
 class Channel(Protocol):
-    def send(self, to: str, text: str | None = None, interactive: dict | None = None) -> None:
-        """One message to one phone: plain text, or a Meta interactive object (the review form)."""
+    def send(self, to: str, text: str | None = None, interactive: dict | None = None,
+             document: dict | None = None) -> None:
+        """One message to one phone: plain text, a Meta interactive object (the review form), or a
+        document {"s3Key", "filename", "caption"} from the media bucket (the report PDF)."""
 
 
 class WhatsAppChannel:
@@ -27,9 +29,14 @@ class WhatsAppChannel:
             lambda_client = boto3.client("lambda")
         self.lambda_ = lambda_client
 
-    def send(self, to, text=None, interactive=None):
+    def send(self, to, text=None, interactive=None, document=None):
         message = {"channel": "whatsapp", "to": to}
-        message.update({"interactive": interactive} if interactive else {"text": text})
+        if document:
+            message["document"] = document
+        elif interactive:
+            message["interactive"] = interactive
+        else:
+            message["text"] = text
         self.lambda_.invoke(FunctionName=SEND_FUNCTION, InvocationType="Event",
                             Payload=json.dumps(message).encode("utf-8"))
 

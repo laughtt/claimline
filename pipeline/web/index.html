@@ -53,6 +53,7 @@ header.top p { margin: 0; color: var(--muted); font-size: 0.88rem; flex: 1 1 320
 .bubble.in { align-self: flex-end; background: var(--mine); }
 .bubble.out { align-self: flex-start; background: var(--theirs); }
 .bubble .meta { display: flex; gap: 8px; align-items: center; justify-content: flex-end; color: var(--muted); font-size: 0.72rem; margin-top: 2px; }
+.bubble a.doc { display: block; padding: 8px 10px; margin-bottom: 4px; border-radius: 6px; background: var(--code); color: var(--ink); text-decoration: none; font-weight: 600; }
 .bubble img { max-width: 220px; border-radius: 6px; display: block; }
 .bubble details { margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
 .bubble details pre { white-space: pre-wrap; max-height: 220px; overflow: auto; background: var(--code); padding: 6px; border-radius: 6px; font-size: 0.7rem; }
@@ -263,6 +264,12 @@ function addOutbound(e) {
     const el = bubble(e.who, "out", `<b>${esc(i.header?.text)}</b>${esc(i.body.text)}<button class="cta">${esc(p.flow_cta)}</button>
       <div class="meta">${p.mode === "draft" ? "Flow en borrador · " : ""}${time()} ${ticks}</div>${jsonBox("mensaje a Meta", b)}`, "formcard");
     $(".cta", el).onclick = () => openFlow(e.who, p);
+    return;
+  }
+  if (b.type === "document") {
+    const d = b.document;
+    bubble(e.who, "out", `<a class="doc" href="/media/${esc(d.id)}" download="${esc(d.filename)}" target="_blank">📄 ${esc(d.filename)}</a>
+      ${esc(d.caption || "")}<div class="meta">${time()} ${ticks}</div>${jsonBox("mensaje a Meta", b)}`);
     return;
   }
   const text = b.text.body;
