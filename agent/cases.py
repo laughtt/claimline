@@ -188,6 +188,26 @@ def set_approval(party: Party, decision: str, comment: str) -> dict[str, str]:
     return decisions
 
 
+def rejected_without_correction(party: Party) -> bool:
+    """True when this driver's last answer was also "changes" and they recorded no fact since.
+
+    Called before set_approval overwrites that last answer.
+    """
+    item = parties_table.get_item(Key={"caseId": party.case_id, "sk": f"{party.role}#{party.phone_hash}"}).get("Item", {})
+    if item.get("approval") != "changes":
+        return False
+    facts = facts_table.query(
+        KeyConditionExpression="caseId = :c",
+        ExpressionAttributeValues={":c": party.case_id},
+    )["Items"]
+    # >= so a correction saved in the same second as the rejection still counts
+    return not any(f["party"] == party.role and int(f.get("updatedAt", 0)) >= int(item["approvedAt"]) for f in facts)
+
+
+def status(case_id: str) -> str:
+    return cases_table.get_item(Key={"caseId": case_id}).get("Item", {}).get("status", "OPEN")
+
+
 def approvals(case_id: str) -> dict[str, str]:
     """Each driver's latest decision on the review form: approve, changes, or absent."""
     items = parties_table.query(

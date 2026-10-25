@@ -96,7 +96,7 @@ def turn(who, text, voice=False, form=None):
     if form:
         form = {"flow_token": session, **form}
         message = main.describe({"type": "interactive", "form": form,
-                                 "approvals": main.record_form(party, form)})
+                                 "review": main.record_form(party, form)})
         text = f"[formulario] {form['decision']} {form.get('comment', '')}".strip()
     elif voice:
         message = main.describe({"type": "audio", "mediaKey": media_key,

@@ -155,8 +155,10 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
 
         Args:
             heading: Form title with the case code, at most 60 characters.
-            intro: One or two sentences: check the facts; they can add a comment
-                but can't change the other driver's statements.
+            intro: Two or three sentences: check the facts; approving means the
+                report records what each driver said, not that they accept the
+                other driver's version, and disputed points stay as disputes;
+                they can add a comment but can't change the other driver's statements.
             agreed: Markdown. A bold title, then one "- " line per AGREED fact,
                 then the facts only one driver gave, saying which ("only you said",
                 "only the other driver said"). Leave out any fact a CONFLICT
@@ -173,13 +175,16 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             body: The chat bubble above the button, one sentence.
             cta: Button that opens the form, at most 20 characters.
             decision_label: Title of the approve/changes choice, at most 30 characters.
-            approve_label: "I approve the report", at most 30 characters.
+            approve_label: Says it records what each said, e.g. "I approve: it's what we each
+                said" ("Apruebo: recoge lo que dijimos"), at most 30 characters.
             changes_label: "Something is wrong", at most 30 characters.
             comment_label: Optional comment box label, at most 20 characters.
             submit_label: Send button, at most 35 characters.
         """
         if not APPROVAL_FLOW_ID:
             return "The review form is not set up. Summarise the facts in a message instead."
+        if cases.status(party.case_id) == "HANDOFF":
+            return "Not sent: the case is with a person now. Tell the driver they will be contacted."
         # Both drivers must see the same disputes; the model has left one out before
         facts_a, facts_b = cases.load_facts(party.case_id)
         conflicts = {r.field for r in reconcile(facts_a, facts_b, same_meaning) if r.status == "CONFLICT"}
@@ -207,6 +212,8 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
         """
         cases.set_status(party.case_id, "HANDOFF", reason)
         contact = HANDOFF_CONTACT or "a claims handler"
-        return f"Case marked for a human. Tell the driver that {contact} will contact them."
+        told = "" if cases.other_party(party) is None else (
+            " Also tell the other driver with message_other_driver that a person will review the case.")
+        return f"Case marked for a human. Tell the driver that {contact} will contact them.{told}"
 
     return [record_fact, set_language, reconcile_case, message_other_driver, send_approval_form, handoff_human]

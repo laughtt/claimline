@@ -48,9 +48,47 @@ class RecordFormTest(unittest.TestCase):
         save.assert_not_called()
 
     def test_anything_but_approve_counts_as_changes(self):
-        with mock.patch.object(cases, "set_approval", return_value={"B": "changes"}) as save:
+        with mock.patch.object(cases, "set_approval", return_value={"B": "changes"}) as save,                 mock.patch.object(cases, "rejected_without_correction", return_value=False):
             main.record_form(self.party, {"flow_token": "ABC234-B", "decision": "", "comment": " fix "})
         save.assert_called_once_with(self.party, "changes", "fix")
+
+    def _answer(self, decision, rejected_before):
+        with mock.patch.object(cases, "set_approval", return_value={"B": decision}),                 mock.patch.object(cases, "rejected_without_correction", return_value=rejected_before),                 mock.patch.object(cases, "set_status") as status:
+            review = main.record_form(self.party, {"flow_token": "ABC234-B", "decision": decision})
+        return review, status
+
+    def test_second_rejection_without_correction_hands_off(self):
+        review, status = self._answer("changes", rejected_before=True)
+        self.assertTrue(review["handoff"])
+        self.assertEqual(status.call_args.args[:2], ("ABC234", "HANDOFF"))
+        self.assertIn("a person", main.describe({"type": "interactive", "review": review,
+                                                 "form": {"flow_token": "ABC234-B", "decision": "changes"}}))
+
+    def test_first_rejection_and_approvals_stay_with_the_agent(self):
+        for decision, before in (("changes", False), ("approve", True)):
+            review, status = self._answer(decision, rejected_before=before)
+            self.assertFalse(review["handoff"])
+            status.assert_not_called()
+
+
+class RejectedWithoutCorrectionTest(unittest.TestCase):
+    party = cases.Party("ABC234", "B", "+1", "h")
+
+    def _check(self, row, facts):
+        parties, facts_table = mock.Mock(), mock.Mock()
+        parties.get_item.return_value = {"Item": row}
+        facts_table.query.return_value = {"Items": facts}
+        with mock.patch.object(cases, "parties_table", parties), mock.patch.object(cases, "facts_table", facts_table):
+            return cases.rejected_without_correction(self.party)
+
+    def test_a_correction_after_the_rejection_resets_it(self):
+        row = {"approval": "changes", "approvedAt": 100}
+        self.assertTrue(self._check(row, [{"party": "B", "updatedAt": 90}, {"party": "A", "updatedAt": 120}]))
+        self.assertFalse(self._check(row, [{"party": "B", "updatedAt": 120}]))
+
+    def test_only_a_previous_rejection_counts(self):
+        self.assertFalse(self._check({"approval": "approve", "approvedAt": 100}, []))
+        self.assertFalse(self._check({}, []))
 
 
 if __name__ == "__main__":
