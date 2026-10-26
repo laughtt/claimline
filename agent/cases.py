@@ -155,10 +155,10 @@ def notes_for(party: Party) -> list[str]:
 
 
 def both_versions_given(case_id: str) -> bool:
-    """Each driver has said where, when, where the cars hit and how (light or direction)."""
+    """Each driver has said where, when, where the cars hit and how (light, direction or manoeuvre)."""
     def given(facts: list[Fact]) -> bool:
         fields = {f.field.split("@")[0] for f in facts}
-        return VERSION_FIELDS <= fields and bool(fields & {"signal_state", "direction"})
+        return VERSION_FIELDS <= fields and bool(fields & {"signal_state", "direction", "cause"})
 
     facts_a, facts_b = load_facts(case_id)
     return given(facts_a) and given(facts_b)

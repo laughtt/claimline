@@ -54,7 +54,7 @@ Open http://localhost:8765.
 
 **Try it:**
 
-1. Choose a scenario at the top right: **"Los dos en verde"** (both drivers say their light was green) or **"Frenazo por un peatón"** (driver A braked for a pedestrian that driver B never saw).
+1. Choose a scenario at the top right: **"Los dos en verde"** (both drivers say their light was green), **"Frenazo por un peatón"** (driver A braked for a pedestrian that driver B never saw) or **"Lluvia del Fenómeno del Niño"** (in Piura, driver A says the El Niño rain flooded the road and made the car skid; driver B says it was only drizzling).
 2. Under each phone there is a demo script. Click its lines in order, alternating A and B, with **✍ texto** (text) or **🎙 voz** (a voice note read by ElevenLabs and transcribed back). You can also type freely, record with the microphone, or send a photo with 📷.
 3. Driver B joins with the code driver A receives (`JOIN XXXXXX`); the script fills it in for you.
 4. When a driver has given their version, the plate and the damage, a **"Revisar informe" / "Review report"** card arrives. Open it, choose **Apruebo / I approve** and send.
@@ -72,6 +72,7 @@ Two scripted drivers run against real Claude, with in-memory tables and WhatsApp
 .venv\Scripts\python -m unittest discover -s tests -t .      # 35 unit tests, no AWS calls
 .venv\Scripts\python scripts\simulate_voice.py                # the whole case by voice, both approve, PDF built
 .venv\Scripts\python scripts\simulate_pedestrian.py           # a pedestrian only one driver saw, nobody blamed
+.venv\Scripts\python scripts\simulate_nino.py                 # El Niño rain: heavy rain vs drizzle, disputed, nobody blamed
 .venv\Scripts\python scripts\simulate_refusal.py              # a driver who won't accept the report
 ```
 

@@ -116,7 +116,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
   <h1>Claimline · BothSides</h1>
   <span class="badge" id="mode">WHATSAPP_ON=0 · prototipo local</span>
   <p>Los dos "móviles" hacen de WhatsApp y Meta. Detrás corre el código desplegado: el router Lambda lee los mismos webhooks, el agente usa Claude real y el send Lambda arma los mismos mensajes de la API de Meta, que aquí se validan como lo haría Meta. Solo se cambian los clientes de AWS, y ElevenLabs reemplaza a Transcribe.</p>
-  <label>Escenario <select class="btn" id="scenario"><option value="semaforo">Los dos en verde</option><option value="peaton">Frenazo por un peatón</option></select></label>
+  <label>Escenario <select class="btn" id="scenario"><option value="semaforo">Los dos en verde</option><option value="peaton">Frenazo por un peatón</option><option value="nino">Lluvia del Fenómeno del Niño</option></select></label>
   <button class="btn" id="reset">Reiniciar todo</button>
 </header>
 
@@ -203,6 +203,30 @@ const SCRIPTS = {
       ["My front bumper and bonnet are dented.", true],
       ["The other car's plate is ABC-123", false],
       ["I'm sure, I didn't see anyone. No photos.", true],
+      ["That's all.", true],
+      ["RESET", false],
+    ],
+  },
+  nino: {
+    A: [
+      ["Hola, acabo de tener un choque. Me chocaron por detrás en plena lluvia.", true],
+      ["No, nadie está herido.", true],
+      ["Fue en la avenida Sánchez Cerro con la avenida Grau, en Piura, a las ocho y veinte de la noche. Llovía muy fuerte por el Fenómeno del Niño y la pista estaba inundada. Iba a unos treinta kilómetros por hora, el agua me hizo patinar y frené. El otro carro me golpeó en el parachoques trasero.", true],
+      ["Sí, estoy seguro, llovía a cántaros y el agua llegaba a media llanta.", true],
+      ["Mi parachoques trasero está hundido.", true],
+      ["XYZ-456", false],
+      ["Estoy seguro, frené porque el carro patinó con el agua. No tengo fotos.", true],
+      ["Eso es todo.", true],
+      ["RESET", false],
+    ],
+    B: [
+      ["JOIN {code}", false],
+      ["No, nobody is hurt.", true],
+      ["It was at Sanchez Cerro and Grau avenues in Piura, around eight twenty PM. It was only drizzling. I was doing about forty and the car in front braked suddenly for no reason. I hit its rear bumper with my front bumper.", true],
+      ["I'm sure, it was just a light drizzle, my wipers were on slow.", true],
+      ["My front bumper and right headlight are broken.", true],
+      ["The other car's plate is ABC-123", false],
+      ["I'm sure, it was barely raining. No photos.", true],
       ["That's all.", true],
       ["RESET", false],
     ],

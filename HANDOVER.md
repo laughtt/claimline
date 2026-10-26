@@ -39,6 +39,7 @@ Es nuestra entrada al hackathon **AWS CDS Agentic AI**: un agente de IA que tram
 | Formulario de aprobación (WhatsApp Flow) | **Hecho** en simulación y en el prototipo; en borrador, **falta probarlo en un móvil real** |
 | Rechazo del informe | Tras dos rechazos sin corrección, el caso pasa a una persona y se avisa a los dos |
 | Escenario del peatón | Lo que hizo un peatón, ciclista o animal se guarda y compara, sin culpar a nadie |
+| Escenario de El Niño | La lluvia y el estado de la pista (`weather`) y la maniobra (`cause`) se comparan; "lluvia fuerte" frente a "garúa" queda en disputa, sin culpar a nadie |
 | Prototipo local de WhatsApp | **Funciona**: `python -m pipeline.server` → http://localhost:8765 |
 | Documentos para los jueces | **Hechos**: `README.md`, `JUDGE_TEST.md`, `ORIGINAL_WORK.md`, `docs/architecture.png` |
 | Código | Repo privado [jorgeantonio-gif/claimline](https://github.com/jorgeantonio-gif/claimline), rama `main` |
@@ -111,7 +112,7 @@ Con esto podemos generar audios con Polly y pasarlos por Transcribe igual que ha
 Abrir http://localhost:8765. Hacen falta Python con el `.venv` del repo, el perfil `test` (para Claude en Bedrock) y la clave de ElevenLabs en `~/.claimline/env` (una línea `ELEVENLABS_API_KEY=...`; pídemela, no va en el repo).
 
 - Dos "móviles": A en español y B en inglés. Se puede escribir, grabar notas de voz, enviar fotos o pulsar las líneas del **guion de demo** que hay debajo de cada móvil (en texto o en voz).
-- Arriba se elige el escenario: **"Los dos en verde"** o **"Frenazo por un peatón"**.
+- Arriba se elige el escenario: **"Los dos en verde"**, **"Frenazo por un peatón"** o **"Lluvia del Fenómeno del Niño"**.
 - En el centro se ve cada paso de cada mensaje (webhook, transcripción, agente, herramientas, envío), los datos guardados y la comparación de versiones.
 - Detrás corre el código desplegado: el router y el send Lambda reales y el agente con Claude real. Meta está emulado y comprueba cada mensaje como Meta, incluido el formulario contra el Flow real. Solo se cambian los servicios de AWS por versiones en memoria, y ElevenLabs reemplaza a Transcribe.
 - Lo único que no puede decir es si el WhatsApp real abre el formulario mientras está en borrador.
@@ -180,7 +181,7 @@ Todo va en la cuenta **888564397690**, usuario `test`, región **eu-west-1**.
 | `flows/approval.json`, `scripts/flow.py` | El formulario de WhatsApp y el script que lo crea y publica |
 | `pipeline/` | Prototipo local de WhatsApp (Meta emulado, servicios de AWS en memoria, voz con ElevenLabs, la página web) |
 | `agent/reconcile.py`, `agent/judge.py` | Comparación de versiones; Claude decide si dos textos libres dicen lo mismo |
-| `scripts/simulate*.py` | Simulan a los dos conductores con Claude real, sin tocar AWS: texto, voz, rechazo y peatón |
+| `scripts/simulate*.py` | Simulan a los dos conductores con Claude real, sin tocar AWS: texto, voz, rechazo, peatón y El Niño |
 | `agent/report.py` | Informe PDF del parte conjunto, generado en código |
 | `tests/` | 35 tests |
 | `docs/PROMPT_CONTEXTO.md` | Contexto para retomar el proyecto en una sesión nueva de Claude |

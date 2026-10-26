@@ -20,6 +20,7 @@ How to work:
 - Keep each WhatsApp message short: 1 to 3 sentences, one question at a time.
 - Gather, in order: injuries, location, time, what happened, the other vehicle's plate, damage, photos.
 - If a driver mentions a pedestrian, cyclist, animal or anyone else on the road, record what that person did as third_party_action and the manoeuvre it led to as cause, in the driver's own terms, besides the usual facts (place, time, speed, where each car was hit). Ask the other driver once, in neutral words, whether they saw anyone, e.g. "The other driver says a pedestrian was crossing. Did you see anyone?"; if they saw nobody, record third_party_action as "none seen". Never say the third party, or anyone, caused the crash or is to blame. If that person may be hurt, the injury rule applies.
+- If a driver mentions rain, flooding, a mudslide or the state of the road (in Peru often from El Niño), record it as weather about the scene, in the driver's own words, and the manoeuvre it led to (skidding, braking, swerving) as cause. Once the other driver has told their version, if they haven't said what the weather was, ask them once, neutrally, e.g. "How was the weather and the road where it happened?". Never say the rain, the road, or anyone caused the crash or is to blame.
 - For what happened, ask where each car was hit, and at a traffic light ask the colour of the driver's own light; if they saw the other driver's light, record it too (about the other vehicle).
 - Whenever you mention a car, say whose it is in words that can't be read both ways: "your car" or "the other driver's car". In Spanish with "usted", "su vehículo" can mean either car, so say "su propio vehículo" or "el vehículo del otro conductor". For where the cars touched, ask one car at a time, e.g. "¿Qué parte del vehículo del otro conductor chocó con el suyo?"
 - If the driver didn't answer a question, ask it once more in the same words or move on; don't reword it into a new question.
@@ -50,7 +51,9 @@ def system_prompt(role: str, case_id: str, event: str, other_joined: bool, other
         sent = " | ".join(f'"{n}"' for n in notes)
         situation.append(
             f"These messages were sent to this driver from the other driver's conversation, so they are "
-            f"not in your history: {sent}. The driver may be answering the last one; don't ask it again."
+            f"not in your history: {sent}. The driver may be answering the last one; don't ask it again. "
+            f"If one of them asks about a CONFLICT, the other conversation has already asked its own driver "
+            f"about it too: don't ask the other driver about that conflict with message_other_driver."
         )
     if other_joined:
         lang = other_language or "unknown, use the language of their messages"

@@ -19,7 +19,7 @@ Built for the AWS CDS Agentic AI Partner Hackathon (October 2026).
 6. Each driver gets a **WhatsApp Flow** with the draft: what both agree on, what only one said, and what is disputed. Approving means "this records what each of us said", not "I accept the other version". A driver's comment goes into the report in their own words. Two rejections with no correction hand the case to a person.
 7. When the second driver approves, the joint report is **built in code as a PDF**, stored in S3 and sent to both drivers as a WhatsApp document, ready to forward to their insurer.
 
-It also handles a third party, such as a pedestrian, cyclist or animal, that only one driver saw: what they did and why a driver braked are compared like any other fact, and nobody is blamed.
+It also handles a third party, such as a pedestrian, cyclist or animal, that only one driver saw: what they did and why a driver braked are compared like any other fact, and nobody is blamed. Weather and road conditions work the same way: in Peru's El Niño rains one driver may say the road was flooded and the other that it was only drizzling, and both versions stay in the report as a dispute.
 
 ## How we use WhatsApp (AWS End User Messaging Social)
 
@@ -126,7 +126,7 @@ What the emulator can't tell is whether real WhatsApp opens a Flow that is still
 ```powershell
 .venv\Scripts\pip install -r agent\requirements.txt
 .venv\Scripts\python -m unittest discover -s tests -t .
-.venv\Scripts\python scripts\simulate_voice.py        # also simulate.py, simulate_pedestrian.py, simulate_refusal.py
+.venv\Scripts\python scripts\simulate_voice.py        # also simulate.py, simulate_pedestrian.py, simulate_nino.py, simulate_refusal.py
 ```
 
 The simulations run two scripted drivers against real Claude, with in-memory tables and WhatsApp, and fail on an assertion if the behaviour is wrong.

@@ -44,7 +44,7 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 
 - Dos "móviles" (A en español, B en inglés) hacen de WhatsApp y Meta. Detrás corre el **código desplegado**: el router y el send Lambda reales y el agente con Claude real. Solo se cambian los clientes de AWS (`pipeline/fake_aws.py`), y ElevenLabs (`pipeline/voice.py`) reemplaza a Transcribe.
 - Meta emulado (`pipeline/meta.py`) valida cada mensaje como Meta: ventana de 24 horas, límites de texto y el formulario contra `flows/approval.json`. La página abre el formulario a partir de ese mismo Flow.
-- Permite notas de voz (grabadas o generadas con ElevenLabs), fotos, ver el JSON de cada mensaje y cambiar de escenario: "Los dos en verde" o "Frenazo por un peatón".
+- Permite notas de voz (grabadas o generadas con ElevenLabs), fotos, ver el JSON de cada mensaje y cambiar de escenario: "Los dos en verde", "Frenazo por un peatón" o "Lluvia del Fenómeno del Niño".
 - Lo único que no puede comprobar es si el WhatsApp real abre un Flow en borrador.
 
 ## Código
@@ -59,7 +59,7 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 | `lambdas/router`, `lambdas/send` | Entrada y salida de mensajes |
 | `flows/approval.json`, `scripts/flow.py` | El formulario de WhatsApp y el script que lo crea y publica |
 | `pipeline/` | Prototipo local de WhatsApp |
-| `scripts/simulate*.py` | Simulaciones con Claude real, sin tocar AWS: texto, voz, rechazo y peatón |
+| `scripts/simulate*.py` | Simulaciones con Claude real, sin tocar AWS: texto, voz, rechazo, peatón y El Niño |
 | `agent/report.py` | Informe PDF del parte conjunto: secciones de la conciliación, citas de cada conductor, aprobaciones; se guarda en `reports/` del bucket y se envía a los dos |
 | `tests/` | 35 tests |
 
@@ -68,6 +68,7 @@ Recorrido de un mensaje: WhatsApp → EUM Social → tema SNS `test-claimline-in
 - El formulario de aprobación funciona en simulación y en el prototipo, con los dos conductores aprobando y el caso en `APPROVED`. **Falta probarlo en un móvil real**, porque sigue en borrador.
 - Rechazos: aprobar significa "recoge lo que dijo cada uno", no aceptar la versión del otro. Al segundo "Algo está mal" sin corrección, el caso pasa a `HANDOFF` y se avisa a los dos.
 - Escenario del peatón: lo que hizo un tercero (`third_party_action`) y el motivo de la maniobra (`cause`) se guardan y se comparan como cualquier dato, sin culpar a nadie.
+- Escenario de El Niño: la lluvia y el estado de la pista se guardan como `weather` y la maniobra como `cause`; `cause` también cuenta como "cómo pasó" para comparar las versiones (antes solo `signal_state` o `direction`).
 - Informe PDF: al aprobar los dos, `agent/report.py` lo genera en código, se guarda en `reports/` del bucket y llega a los dos conductores como documento de WhatsApp. El agente no dice que se envió a una aseguradora, porque eso (SES) aún no existe. Probado en simulación y en el prototipo; en AWS real no se ha podido probar sin WhatsApp.
 - Documentos para los jueces hechos (en inglés): `README.md` (con la sección "How we use WhatsApp" para el premio de Meta y la nota de costes), `JUDGE_TEST.md`, `ORIGINAL_WORK.md` y `docs/architecture.png` (fuente en `docs/architecture/`).
 - Despliegue portable: `CLAIMLINE_ACCOUNT`/`CLAIMLINE_REGION` y `-c permissionsBoundary=` para otra cuenta; nuestro despliegue no cambia. El prototipo funciona con credenciales de cualquiera y sin clave de ElevenLabs (solo texto).
