@@ -36,6 +36,9 @@ class FakeTable:
         for name, value in re.findall(r"([#\w]+)\s*=\s*(:\w+)", UpdateExpression):
             item[names.get(name, name)] = ExpressionAttributeValues[value]
 
+    def scan(self):
+        return {"Items": [dict(i) for i in self.items.values()]}
+
     def delete_item(self, Key):
         self.items.pop(self._k(Key), None)
 
@@ -45,3 +48,4 @@ def install() -> None:
     cases.cases_table = FakeTable(["caseId"])
     cases.parties_table = FakeTable(["caseId", "sk"])
     cases.facts_table = FakeTable(["caseId", "factId"])
+    cases.conversation_table = FakeTable(["caseId", "sk"])

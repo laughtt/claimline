@@ -32,6 +32,7 @@ say("A", "RESET")
 say("B", "RESET")
 party_a, _ = say("A", "Hola, acabo de tener un choque. Me chocaron por detrás en plena lluvia.")
 say("A", "No, nadie está herido.")
+say("A", "", button="path_joint")
 say("B", f"JOIN {party_a.case_id}")
 say("B", "No, nobody is hurt.")
 say("A", "Fue en la avenida Sánchez Cerro con la avenida Grau, en Piura, a las 20:20. Llovía muy fuerte por el "

@@ -14,6 +14,7 @@ from simulate import cases, forms_sent, turn  # noqa: E402
 turn("A", "RESET")
 turn("B", "RESET")
 party_a, _ = turn("A", "Hola, tuve un choque en un cruce. Nadie está herido.")
+turn("A", "", button="path_joint")
 turn("B", f"JOIN {party_a.case_id}")
 turn("B", "Nobody is hurt.")
 turn("A", "Fue en Javier Prado con Arequipa a las 19:40. Mi semáforo estaba en verde, iba a 40 km/h y el otro "

@@ -37,12 +37,13 @@ os.environ.setdefault("MODEL_ID", "eu.anthropic.claude-opus-5-5")
 os.environ.setdefault("APPROVAL_FLOW_ID", "29183837704562024")
 os.environ.setdefault("APPROVAL_FLOW_MODE", "draft")
 
-from agent import channel, main, report  # noqa: E402
+from agent import cases, channel, main, report  # noqa: E402
 from pipeline import fake_aws, lambdas, memory_store, voice  # noqa: E402
 from pipeline.meta import MEDIA_DIR, FakeMeta  # noqa: E402
 
 PORT = int(os.environ.get("PORT", "8765"))
 WEB = pathlib.Path(__file__).parent / "web" / "index.html"
+BOARD = pathlib.Path(__file__).parent / "web" / "board.html"
 PHONES = {"A": "+10000000001", "B": "+10000000002"}
 WHO = {phone: who for who, phone in PHONES.items()}
 
@@ -120,6 +121,11 @@ def worker():
             elif job.get("image"):
                 media_id = meta.upload(job["image"], job["mime"])
                 deliver(who, meta.media_message("image", media_id), {"type": "image", "mediaId": media_id})
+            elif job.get("button"):
+                reply = {"type": "interactive", "interactive": {"type": "button_reply", "button_reply": job["button"]}}
+                deliver(who, reply, {"type": "button", "button": job["button"]})
+            elif job.get("location"):
+                deliver(who, {"type": "location", "location": job["location"]}, {"type": "location", "location": job["location"]})
             elif job.get("form"):
                 form = job["form"]
                 reply = {"type": "interactive", "interactive": {"type": "nfm_reply", "nfm_reply": {
@@ -133,6 +139,31 @@ def worker():
 
 
 threading.Thread(target=worker, daemon=True).start()
+
+
+def board() -> dict:
+    """Every case for the claims board: where, which path, its status and the whole conversation."""
+    out = []
+    for case in sorted(cases.all_cases(), key=lambda c: c.get("createdAt", 0), reverse=True):
+        case_id, key = case["caseId"], f"reports/{case['caseId']}/Claimline-{case['caseId']}.pdf"
+        parties = report.driver_rows(case_id)
+        out.append({
+            **fake_aws.snapshot(case_id, []),
+            "path": case.get("path", ""),
+            "createdAt": case.get("createdAt"),
+            "updatedAt": case.get("updatedAt"),
+            "place": {"lat": float(case["lat"]), "lon": float(case["lon"]), "label": case.get("place", "")}
+            if case.get("lat") else None,
+            "parties": [{"role": role, "phone": p["phone"][:3] + " ··· " + p["phone"][-4:],
+                         "language": p.get("language", ""), "approval": p.get("approval", ""),
+                         "comment": p.get("approvalComment", ""), "approvedAt": p.get("approvedAt")}
+                        for role, p in sorted(parties.items())],
+            "reconciled": json.loads(case["reconciled"]) if case.get("reconciled") else None,
+            "messages": [{k: m.get(k) for k in ("role", "direction", "kind", "text", "at", "media")}
+                         for m in cases.conversation(case_id)],
+            "report": key if key in s3.objects else None,
+        })
+    return {"cases": out}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -156,6 +187,16 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == "/":
             self._send(200, WEB.read_bytes(), "text/html; charset=utf-8")
+        elif url.path == "/board":
+            self._send(200, BOARD.read_bytes(), "text/html; charset=utf-8")
+        elif url.path == "/api/board":
+            self._json(board())
+        elif url.path == "/api/s3":
+            key = parse_qs(url.query).get("key", [""])[0]
+            if key not in s3.objects:
+                return self._send(404)
+            data, mime = s3.objects[key]
+            self._send(200, data, mime)
         elif url.path == "/api/events":
             after = int(parse_qs(url.query).get("after", ["0"])[0])
             self._json({"events": log.after(after), "phones": PHONES, "voice": speaker is not None})
@@ -180,6 +221,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "who must be A or B"}, 400)
             if data.get("form"):
                 turns.put({"who": who, "form": data["form"]})
+            elif data.get("button"):
+                turns.put({"who": who, "button": data["button"]})
+            elif data.get("location"):
+                turns.put({"who": who, "location": data["location"]})
             elif data.get("voice"):
                 turns.put({"who": who, "sample": True, "text": data["text"]})
             else:
@@ -210,5 +255,5 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Claimline local WhatsApp prototype (WHATSAPP_ON=0) on http://localhost:{PORT}")
+    print(f"Claimline local WhatsApp prototype (WHATSAPP_ON=0) on http://localhost:{PORT}, board on /board")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

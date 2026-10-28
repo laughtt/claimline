@@ -176,6 +176,8 @@ def reply_from_agent(msg, media_key, transcript=None):
         "mediaKey": media_key,
         "transcript": transcript,
         "form": form_reply(msg),
+        # A reply button the agent sent, e.g. {"id": "path_solo", "title": "Solo yo"}
+        "button": (msg.get("interactive") or {}).get("button_reply"),
         "msgId": msg["id"],
     }
     try:

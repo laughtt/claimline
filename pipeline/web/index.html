@@ -122,6 +122,13 @@ select.btn { padding-right: 28px; appearance: none; background-image: linear-gra
 .formcard .cta { display: block; width: calc(100% + 20px); margin: 8px -10px -6px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--read); font-weight: 600; padding: 9px 0 8px; }
 .formcard .cta:hover { background: var(--surface-2); }
 .formcard .meta { margin-top: 6px; }
+.btncard { white-space: normal; min-width: 210px; }
+.btncard .choices { display: grid; margin: 8px -10px -6px; }
+.btncard .choices button { border: 0; border-top: 1px solid var(--line); background: none; color: var(--read); font-weight: 600; padding: 9px 0 8px; }
+.btncard .choices button:hover { background: var(--surface-2); }
+.btncard .choices button:disabled { color: var(--faint); cursor: default; }
+.bubble .pin { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.bubble .pin small { display: block; font-weight: 400; color: var(--muted); }
 .composer { display: flex; gap: 6px; align-items: center; padding: 8px 10px 12px; background: transparent; }
 .composer input:not([type]) { flex: 1; min-width: 0; border: 0; border-radius: 22px; padding: 9px 14px; background: var(--theirs); color: var(--ink); font: inherit; font-size: 0.88rem; box-shadow: 0 1px 0.5px rgba(0,0,0,.13); outline: none; }
 .round { width: 38px; height: 38px; border-radius: 50%; border: 0; background: linear-gradient(180deg, var(--accent-2), var(--accent)); color: #fff; font-size: 0.95rem; flex: none; box-shadow: 0 4px 10px -4px var(--glow); }
@@ -198,12 +205,13 @@ dialog::backdrop { background: rgba(8, 14, 11, .55); backdrop-filter: blur(3px);
 <header class="top">
   <div class="brand">
     <span class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6M14 12h6"/><path d="M10 7l-6 5 6 5M14 7l6 5-6 5"/></svg></span>
-    <div><h1>Claimline <span>· BothSides</span></h1></div>
+    <div><h1>Claimline <span>· WhatsApp</span></h1></div>
     <span class="badge" id="mode">WHATSAPP_ON=0 · prototipo local</span>
   </div>
   <p title="Los dos &quot;móviles&quot; hacen de WhatsApp y Meta. Detrás corre el código desplegado: el router Lambda lee los mismos webhooks, el agente usa Claude real y el send Lambda arma los mismos mensajes de la API de Meta, que aquí se validan como lo haría Meta. Solo se cambian los clientes de AWS, y ElevenLabs reemplaza a Transcribe.">Dos móviles emulan WhatsApp y Meta; detrás corre el código desplegado, con Claude real. Solo se cambian los clientes de AWS.</p>
   <div class="controls">
-    <label>Escenario <select class="btn" id="scenario"><option value="semaforo">Los dos en verde</option><option value="peaton">Frenazo por un peatón</option><option value="nino">Lluvia del Fenómeno del Niño</option></select></label>
+    <label>Escenario <select class="btn" id="scenario"><option value="solo" selected>Solo yo · inundación del Niño</option><option value="nino">Con otra persona · lluvia del Niño</option><option value="semaforo">Con otra persona · los dos en verde</option><option value="peaton">Con otra persona · frenazo por un peatón</option></select></label>
+    <a class="btn" href="/board" target="_blank">Tablero ↗</a>
     <button class="btn" id="reset">Reiniciar todo</button>
   </div>
 </header>
@@ -221,24 +229,24 @@ dialog::backdrop { background: rgba(8, 14, 11, .55); backdrop-filter: blur(3px);
   <section class="phone" data-who="A">
     <div class="device">
       <div class="statusbar"><span>9:41</span><span class="island"></span><span class="icons">▂▄▆ ▮</span></div>
-      <div class="phone-head"><span class="avatar">A</span><div>Conductor A<small>+1 000 000 0001 · español</small></div><span class="typing">escribiendo…</span></div>
+      <div class="phone-head"><span class="avatar">A</span><div>Persona A<small>+1 000 000 0001 · español</small></div><span class="typing">escribiendo…</span></div>
       <div class="chat"></div>
-      <form class="composer"><input placeholder="Mensaje" autocomplete="off"><input type="file" accept="image/*" hidden><button type="button" class="round photo" title="Enviar foto">📷</button><button type="button" class="round mic" title="Grabar nota de voz">🎤</button><button class="round" title="Enviar">➤</button></form>
+      <form class="composer"><input placeholder="Mensaje" autocomplete="off"><input type="file" accept="image/*" hidden><button type="button" class="round photo" title="Enviar foto">📷</button><button type="button" class="round photo pinbtn" title="Compartir ubicación">📍</button><button type="button" class="round mic" title="Grabar nota de voz">🎤</button><button class="round" title="Enviar">➤</button></form>
     </div>
     <details class="script" open><summary>Guion de demo</summary><div class="lines"></div></details>
   </section>
 
   <section class="middle">
-    <div class="card"><h2><span class="live"></span>Pipeline <small>cada paso de cada mensaje</small></h2><div class="log" id="log"><div class="empty">Escribe o manda una nota de voz desde el conductor A para abrir un caso.</div></div></div>
+    <div class="card"><h2><span class="live"></span>Pipeline <small>cada paso de cada mensaje</small></h2><div class="log" id="log"><div class="empty">Escribe o manda una nota de voz desde la persona A para abrir un caso.</div></div></div>
     <div class="card"><h2>Caso <span id="caseid"></span> <span class="status OPEN" id="status" hidden></span></h2><div id="casebody" class="empty">Todavía no hay caso.</div></div>
   </section>
 
   <section class="phone" data-who="B">
     <div class="device">
       <div class="statusbar"><span>9:41</span><span class="island"></span><span class="icons">▂▄▆ ▮</span></div>
-      <div class="phone-head"><span class="avatar">B</span><div>Conductor B<small>+1 000 000 0002 · english</small></div><span class="typing">typing…</span></div>
+      <div class="phone-head"><span class="avatar">B</span><div>Person B<small>+1 000 000 0002 · english</small></div><span class="typing">typing…</span></div>
       <div class="chat"></div>
-      <form class="composer"><input placeholder="Message" autocomplete="off"><input type="file" accept="image/*" hidden><button type="button" class="round photo" title="Send a photo">📷</button><button type="button" class="round mic" title="Record a voice note">🎤</button><button class="round" title="Send">➤</button></form>
+      <form class="composer"><input placeholder="Message" autocomplete="off"><input type="file" accept="image/*" hidden><button type="button" class="round photo" title="Send a photo">📷</button><button type="button" class="round photo pinbtn" title="Share location">📍</button><button type="button" class="round mic" title="Record a voice note">🎤</button><button class="round" title="Send">➤</button></form>
     </div>
     <details class="script" open><summary>Demo script</summary><div class="lines"></div></details>
   </section>
@@ -253,13 +261,51 @@ dialog::backdrop { background: rgba(8, 14, 11, .55); backdrop-filter: blur(3px);
 </dialog>
 
 <script>
-// Each line: [text, voice?]. Plates are typed, as the agent asks
+// Each line: [text, voice?, extra]. extra taps a button ({button: id}) or shares a pin ({pin: true}).
+// Plates are typed, as the agent asks
+const JOINT = {button: "path_joint"}, SOLO = {button: "path_solo"}, PIN = {pin: true};
+// Approximate places for the demo pins
+const PINS = {
+  solo: {A: {latitude: -5.1955, longitude: -80.6235, name: "Calle Ayacucho, Castilla, Piura"},
+         B: {latitude: -5.2662, longitude: -80.6752, name: "Jr. Comercio, Catacaos, Piura"}},
+  nino: {A: {latitude: -5.1932, longitude: -80.6368, name: "Av. Sánchez Cerro con Av. Grau, Piura"},
+         B: {latitude: -5.1933, longitude: -80.6366, name: "Sanchez Cerro and Grau, Piura"}},
+  semaforo: {A: {latitude: -12.0911, longitude: -77.0350, name: "Av. Javier Prado con Av. Arequipa, Lima"},
+             B: {latitude: -12.0912, longitude: -77.0349, name: "Javier Prado and Arequipa, Lima"}},
+  peaton: {A: {latitude: -12.1223, longitude: -77.0300, name: "Av. Larco con calle Schell, Miraflores"},
+           B: {latitude: -12.1224, longitude: -77.0301, name: "Larco and Schell, Miraflores"}},
+};
 const SCRIPTS = {
+  solo: {
+    A: [
+      ["Hola, anoche la lluvia del Niño inundó mi casa. La quebrada se desbordó y entró el agua con lodo.", true],
+      ["No, nadie está herido, estamos bien.", true],
+      ["👆 Solo yo", false, SOLO],
+      ["📍 Compartir ubicación", false, PIN],
+      ["Fue anoche, como a las dos de la madrugada. Llovió fuerte toda la noche y el agua llegó como a un metro, hasta las rodillas.", true],
+      ["Es mi casa. Se malograron la refrigeradora, la cocina, dos colchones y la puerta de madera.", true],
+      ["No tengo fotos ahora, se las mando mañana.", true],
+      ["Eso es todo.", true],
+      ["RESET", false],
+    ],
+    B: [
+      ["Hi, my shop got flooded last night in the El Niño rain.", true],
+      ["No, nobody is hurt.", true],
+      ["👆 Just me", false, SOLO],
+      ["📍 Share location", false, PIN],
+      ["It was around eleven PM. The street flooded with the heavy rain and the water came into the shop, about forty centimeters high.", true],
+      ["It's my shop. The water ruined the counter, the fridge and the stock of rice and sugar sacks.", true],
+      ["That's all, no photos.", true],
+      ["RESET", false],
+    ],
+  },
   semaforo: {
     A: [
       ["Hola, acabo de tener un choque con otro coche en un cruce.", true],
       ["No, nadie está herido, solo daños en los coches.", true],
+      ["👆 Con otra persona", false, JOINT],
       ["Fue en el cruce de la avenida Javier Prado con la avenida Arequipa, a las siete y cuarenta de la noche. Yo iba a unos cuarenta kilómetros por hora y mi semáforo estaba en verde. El otro coche me chocó en la puerta delantera derecha.", true],
+      ["📍 Compartir ubicación", false, PIN],
       ["Estoy seguro, el semáforo estaba en verde cuando entré al cruce.", true],
       ["Mi coche tiene la puerta derecha hundida y el espejo roto.", true],
       ["ABC-123", false],
@@ -281,7 +327,9 @@ const SCRIPTS = {
     A: [
       ["Hola, acabo de tener un choque. Me chocaron por detrás.", true],
       ["Nadie está herido. El peatón tampoco, no llegué a tocarlo.", true],
+      ["👆 Con otra persona", false, JOINT],
       ["Fue en la avenida Larco con la calle Schell, en Miraflores, a las seis y cuarto de la tarde. Iba a unos cuarenta kilómetros por hora y un peatón cruzó de repente con el semáforo peatonal en rojo, así que frené fuerte. El otro coche me golpeó en el parachoques trasero.", true],
+      ["📍 Compartir ubicación", false, PIN],
       ["Sí, estoy seguro, era un señor que cruzó corriendo sin mirar.", true],
       ["Mi parachoques trasero está hundido.", true],
       ["XYZ-456", false],
@@ -305,7 +353,9 @@ const SCRIPTS = {
     A: [
       ["Hola, acabo de tener un choque. Me chocaron por detrás en plena lluvia.", true],
       ["No, nadie está herido.", true],
+      ["👆 Con otra persona", false, JOINT],
       ["Fue en la avenida Sánchez Cerro con la avenida Grau, en Piura, a las ocho y veinte de la noche. Llovía muy fuerte por el Fenómeno del Niño y la pista estaba inundada. Iba a unos treinta kilómetros por hora, el agua me hizo patinar y frené. El otro carro me golpeó en el parachoques trasero.", true],
+      ["📍 Compartir ubicación", false, PIN],
       ["Sí, estoy seguro, llovía a cántaros y el agua llegaba a media llanta.", true],
       ["Mi parachoques trasero está hundido.", true],
       ["XYZ-456", false],
@@ -326,7 +376,7 @@ const SCRIPTS = {
     ],
   },
 };
-let scenario = "semaforo", voiceOn = true;
+let scenario = "solo", voiceOn = true;
 const STAGES = {
   router: ["router", "Webhook"], tts: ["in", "Voz de ejemplo generada"],
   transcribe: ["voice", "Transcripción"], agent: ["agent", "Agente pensando"],
@@ -370,6 +420,8 @@ function addInbound(e) {
   if (e.type === "audio") inner = `<audio controls src="/media/${esc(e.mediaId)}"></audio><div class="transcript" data-media="${esc(e.mediaId)}">transcribiendo…</div>`;
   else if (e.type === "image") inner = `<img src="/media/${esc(e.mediaId)}" alt="foto">`;
   else if (e.type === "form") inner = `📋 ${e.form.decision === "approve" ? "Apruebo" : "Algo está mal"}${e.form.comment ? ` — ${esc(e.form.comment)}` : ""}`;
+  else if (e.type === "button") inner = `👆 ${esc(e.button.title)}`;
+  else if (e.type === "location") inner = `<span class="pin">📍<span>${esc(e.location.name || "Ubicación")}<small>${e.location.latitude.toFixed(4)}, ${e.location.longitude.toFixed(4)}</small></span></span>`;
   else inner = esc(e.text);
   bubble(e.who, "in", `${inner}<div class="meta">${time()}</div>${jsonBox("webhook de Meta", e.webhook)}`);
 }
@@ -377,6 +429,13 @@ function addInbound(e) {
 // What the send Lambda sent, as the Cloud API body Meta accepted
 function addOutbound(e) {
   const b = e.body, ticks = `<span class="ticks" data-msg="${esc(e.messageId)}">✓</span>`;
+  if (b.type === "interactive" && b.interactive.type === "button") {
+    const i = b.interactive;
+    const el = bubble(e.who, "out", `${esc(i.body.text)}<div class="meta">${time()} ${ticks}</div><div class="choices">${i.action.buttons.map(x =>
+      `<button data-id="${esc(x.reply.id)}">${esc(x.reply.title)}</button>`).join("")}</div>${jsonBox("mensaje a Meta", b)}`, "btncard");
+    el.querySelectorAll(".choices button").forEach(btn => btn.onclick = () => tap(e.who, btn.dataset.id, btn.textContent));
+    return;
+  }
   if (b.type === "interactive") {
     const i = b.interactive, p = i.action.parameters;
     const el = bubble(e.who, "out", `<b>${esc(i.header?.text)}</b>${esc(i.body.text)}<button class="cta">${esc(p.flow_cta)}</button>
@@ -461,17 +520,17 @@ function highlight(node) {
 
 function renderCase(c) {
   if (c.reconciled) lastReconciled = c.reconciled;
-  $("#caseid").textContent = c.caseId;
+  $("#caseid").textContent = `${c.caseId} · ${{joint: "con otra persona", solo: "solo yo"}[c.path] || "camino por elegir"}`;
   const st = $("#status");
   st.hidden = false; st.className = `status ${c.status}`; st.textContent = c.status;
-  const appr = ["A", "B"].map(r => `${r}: ${c.approvals[r] === "approve" ? "aprobó" : c.approvals[r] === "changes" ? "pidió cambios" : "—"}`).join(" · ");
+  const appr = (c.path === "solo" ? ["A"] : ["A", "B"]).map(r => `${r}: ${c.approvals[r] === "approve" ? "aprobó" : c.approvals[r] === "changes" ? "pidió cambios" : "—"}`).join(" · ");
   const facts = c.facts.length ? `<div class="table-wrap"><table><tr><th>Dice</th><th>Hecho</th><th>Valor</th><th>Prueba</th></tr>${c.facts.map(f =>
       `<tr><td>${esc(f.by)}</td><td><code>${esc(f.field)}</code></td><td>${esc(f.value)}</td><td title="${esc(f.quote)}">${f.evidence === "voice" ? "🎤" : "✍"} ${esc(f.quote).slice(0, 60)}</td></tr>`).join("")}</table></div>` : `<div class="empty">Sin hechos todavía.</div>`;
   const rec = lastReconciled ? `<div class="table-wrap"><table><tr><th>Hecho</th><th>Estado</th><th>A</th><th>B</th></tr>${lastReconciled.map(r =>
       `<tr class="${r.status === "CONFLICT" ? "conflict" : ""}"><td><code>${esc(r.field)}</code></td><td><span class="st ${esc(r.status)}">${esc(r.status)}</span></td><td>${esc(r.driver_A ?? "—")}</td><td>${esc(r.driver_B ?? "—")}</td></tr>`).join("")}</table></div>` : `<div class="empty">Se calcula cuando los dos han dado su versión.</div>`;
   $("#casebody").className = "";
   $("#casebody").innerHTML = `<p class="empty">Aprobaciones: ${appr}${c.statusReason ? ` · ${esc(c.statusReason)}` : ""}</p>
-    <h2>Hechos guardados</h2>${facts}<h2 style="margin-top:12px">Conciliación <small>código, no el modelo</small></h2>${rec}`;
+    <h2>Hechos guardados</h2>${facts}${c.path === "solo" ? "" : `<h2 style="margin-top:12px">Conciliación <small>código, no el modelo</small></h2>${rec}`}`;
 }
 
 function handle(e) {
@@ -487,7 +546,7 @@ function handle(e) {
 
 function resetView() {
   document.querySelectorAll(".chat").forEach(c => c.innerHTML = "");
-  $("#log").innerHTML = `<div class="empty">Reiniciado. Empieza otra vez desde el conductor A.</div>`;
+  $("#log").innerHTML = `<div class="empty">Reiniciado. Empieza otra vez desde la persona A.</div>`;
   $("#casebody").className = "empty"; $("#casebody").textContent = "Todavía no hay caso.";
   $("#caseid").textContent = ""; $("#status").hidden = true;
   caseId = ""; lastReconciled = null; renderScript("B");
@@ -516,16 +575,30 @@ async function play(text, btn) {
   } finally { btn.disabled = false; }
 }
 
+// A reply button, with the title it showed in this phone's chat
+function tap(who, id, title) {
+  const shown = [...phone(who).querySelectorAll(`.choices button[data-id="${CSS.escape(id)}"]`)].pop();
+  if (!title && !shown) return alert("Ese botón todavía no ha llegado a este teléfono.");
+  post("/api/message", {who, button: {id, title: title || shown.textContent}});
+}
+
+function sendPin(who) {
+  post("/api/message", {who, location: PINS[scenario][who]});
+}
+
 function renderScript(who) {
   const box = $(".lines", phone(who));
   box.innerHTML = "";
-  for (const [raw, voice] of SCRIPTS[scenario][who]) {
+  for (const [raw, voice, extra] of SCRIPTS[scenario][who]) {
     const text = raw.replace("{code}", caseId || "······");
     const row = document.createElement("div");
     row.className = "line";
-    row.innerHTML = `<span>${esc(text)}</span>${voice && voiceOn ? `<button data-v="1">🎙 voz</button>` : ""}<button>✍ texto</button>`;
+    row.innerHTML = `<span>${esc(text)}</span>${extra ? `<button>${extra.pin ? "enviar" : "tocar"}</button>` :
+      `${voice && voiceOn ? `<button data-v="1">🎙 voz</button>` : ""}<button>✍ texto</button>`}`;
     row.querySelectorAll("button").forEach(b => b.onclick = () => {
       if (text.includes("······")) return alert("Primero A tiene que abrir el caso y recibir el código JOIN.");
+      if (extra?.pin) return sendPin(who);
+      if (extra?.button) return tap(who, extra.button);
       post("/api/message", b.dataset.v ? {who, text, voice: true} : {who, text});
     });
     box.appendChild(row);
@@ -540,6 +613,7 @@ for (const who of ["A", "B"]) {
     post("/api/message", {who, text: input.value.trim()});
     input.value = "";
   };
+  $(".pinbtn", p).onclick = () => sendPin(who);
   const file = $("input[type=file]", p);
   $(".photo", p).onclick = () => file.click();
   file.onchange = async () => {

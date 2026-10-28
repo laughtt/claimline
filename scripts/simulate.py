@@ -1,4 +1,4 @@
-"""BothSides simulation: real Claude on Bedrock, in-memory DynamoDB and WhatsApp.
+"""Claimline simulation: real Claude on Bedrock, in-memory DynamoDB and WhatsApp.
 
 Runs the same prompts, tools and reconcile as the deployed agent, with two
 scripted drivers. Nothing is written to AWS and no WhatsApp is sent.
@@ -43,8 +43,9 @@ class FakeChannel:
 
 channel.use(FakeChannel())
 tools.APPROVAL_FLOW_ID = "sim-flow"
-# Review forms sent, as (role, screen data), for the scenario's checks
+# Review forms sent, as (role, screen data), and reply buttons, as (role, ids), for the scenario's checks
 forms_sent = []
+buttons_sent = []
 
 PHONES = {"A": "+10000000001", "B": "+10000000002"}
 # What Transcribe detects for each scripted driver
@@ -55,49 +56,55 @@ history = {}
 usage = {}
 
 
-def turn(who, text, voice=False, form=None):
+def turn(who, text, voice=False, form=None, button=None, location=None):
     """One inbound message.
 
     voice=True sends text as an already transcribed voice note; form sends a
-    review form answer {"decision": "approve" | "changes", "comment": "..."}.
+    review form answer {"decision": "approve" | "changes", "comment": "..."};
+    button taps a reply button by id ("path_joint" or "path_solo"); location
+    shares a pin {"latitude", "longitude", "name"}.
     """
-    party, event = cases.resolve_party(PHONES[who], "" if voice else text)
+    party, event = cases.resolve_party(PHONES[who], "" if voice or button or location else text)
     if party is None:
         print(f"\n### Telefono {who} [sin caso, {event}]: {text}")
         print(f"<<< Respuesta fija a {who}: {main.FIXED_REPLIES[event]}")
         return None, main.FIXED_REPLIES[event]
     session = f"{party.case_id}-{party.role}"
     msg_id = f"sim-{session}-{len(history.get(session, []))}"
-    media_key = f"media/inbound/{PHONES[who]}/{msg_id}" if voice else None
-    agent = main.build_agent(party, event, msg_id, media_key, messages=history.get(session, []))
-    start = len(agent.messages)
-    message = text
+    payload = {"type": "text", "text": text, "msgId": msg_id}
     if form:
         form = {"flow_token": session, **form}
-        message = main.describe({"type": "interactive", "form": form,
-                                 "review": main.record_form(party, form)})
+        payload = {"type": "interactive", "form": form, "msgId": msg_id}
         text = f"[formulario] {form['decision']} {form.get('comment', '')}".strip()
+    elif button:
+        payload = {"type": "interactive", "button": {"id": button, "title": button}, "msgId": msg_id}
+        text = f"[boton] {button}"
+    elif location:
+        payload = {"type": "location", "location": location, "msgId": msg_id}
+        text = f"[ubicacion] {location.get('name', '')}"
     elif voice:
-        message = main.describe({"type": "audio", "mediaKey": media_key,
-                                 "transcript": {"text": text, "language": VOICE_LANGUAGES[who]}})
-    result = agent(message)
+        media_key = f"media/inbound/{PHONES[who]}/{msg_id}"
+        payload = {"type": "audio", "mediaKey": media_key, "msgId": msg_id,
+                   "transcript": {"text": text, "language": VOICE_LANGUAGES[who]}}
+    reply, calls, agent, result = main.run_turn(party, event, payload, messages=history.get(session, []))
     for k, v in result.metrics.accumulated_usage.items():
         usage[k] = usage.get(k, 0) + v
-    reply = str(result).strip()
     history[session] = agent.messages
     print(f"\n### Telefono {who} [{party.case_id}/{party.role}, {event}]{' (nota de voz)' if voice else ''}: {text}")
-    for m in agent.messages[start:]:
-        for block in m["content"]:
-            if "toolUse" in block and block["toolUse"]["name"] != "send_approval_form":
-                print(f"   [tool] {block['toolUse']['name']} {json.dumps(block['toolUse']['input'], ensure_ascii=False)}")
-            if "toolResult" in block and block["toolResult"]["content"]:
-                res = block["toolResult"]["content"][0].get("text", "")
-                if res.startswith("{"):
-                    print(f"   [reconcile] {res}")
+    for call in calls:
+        if call["name"] != "send_approval_form":
+            print(f"   [tool] {call['name']} {json.dumps(call['input'], ensure_ascii=False)}")
+        if call["result"].startswith("{"):
+            print(f"   [reconcile] {call['result']}")
     while outbox:
         sent = outbox.pop(0)
         if "document" in sent:
             print(f"   [PDF a {sent['to']}] {sent['document']['filename']}: {sent['document']['caption']}")
+        elif "interactive" in sent and sent["interactive"]["type"] == "button":
+            buttons = sent["interactive"]["action"]["buttons"]
+            buttons_sent.append((party.role, [b["reply"]["id"] for b in buttons]))
+            print(f"   [Botones a {who}] {sent['interactive']['body']['text']} | "
+                  + " | ".join(f"[{b['reply']['title']}]" for b in buttons))
         elif "interactive" in sent:
             data = sent["interactive"]["action"]["parameters"]["flow_action_payload"]["data"]
             forms_sent.append((party.role, data))
@@ -123,6 +130,7 @@ def print_facts():
 def main_scenario():
     party_a, _ = turn("A", "Hola, acabo de tener un choque en un cruce")
     turn("A", "No, nadie está herido, solo daños en los coches")
+    turn("A", "", button="path_joint")
     turn("B", "JOIN ZZZZZZ")  # wrong code from a phone with no case: no case may be opened
     turn("B", f"JOIN {party_a.case_id}")
     turn("B", "No, nobody is hurt")

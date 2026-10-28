@@ -1,6 +1,11 @@
 # Claimline · BothSides
 
-**Two drivers. Two languages. One report.** After a car crash, both drivers message the same WhatsApp number, each in their own language, by text or voice notes. Claimline's agent collects each version separately, compares them in plain code, asks only about what doesn't match without ever saying who is at fault, and sends both drivers a neutral joint report to approve in a WhatsApp Flow. When both approve, each receives the report as a PDF.
+**One WhatsApp number for every loss, with two paths.** The person reports by text, voice notes, photos and a location pin, and taps one of two buttons:
+
+- **Con otra persona (with someone else):** after a crash, both drivers message the same number, each in their own language. Claimline collects each version separately, compares them in plain code, asks only about what doesn't match without ever saying who is at fault, and sends both a neutral joint report to approve in a WhatsApp Flow.
+- **Solo yo (just me):** a loss of one's own, such as a home or shop flooded in the El Niño rains. The agent collects where, when, what happened, how high the water got and what was damaged, and the person approves their own report.
+
+When everyone approves, each person receives the report as a PDF. Every message of every case is saved, and a **claims board** shows the cases on a live map with the whole conversation, the facts with their evidence, and a dashboard.
 
 Built for the AWS CDS Agentic AI Partner Hackathon (October 2026).
 
@@ -8,8 +13,21 @@ Built for the AWS CDS Agentic AI Partner Hackathon (October 2026).
 
 - **Try it:** [JUDGE_TEST.md](JUDGE_TEST.md). The local WhatsApp prototype runs the deployed code in a browser, with no phone needed.
 - **What is ours:** [ORIGINAL_WORK.md](ORIGINAL_WORK.md).
+- **The research behind it:** [docs/RESEARCH.md](docs/RESEARCH.md). **Earlier AWS hackathon winners:** [docs/PAST_WINNERS.md](docs/PAST_WINNERS.md).
+
+## Why
+
+- **The losses come back.** The 2017 Niño Costero affected about 1.6 million people in Peru and cost up to US$3.1 billion, about 1.6% of GDP. In 2023 Cyclone Yaku affected 27,843 homes.
+- **Most of it was never insured.** Peru's insurance penetration is about 2% of GDP, and in a Swiss Re study of 10 Latin American countries 82% of disaster losses were uninsured. In the US, only about 1% to 2% of homes in the counties hardest hit by Hurricane Helene had flood insurance.
+- **The claim decides whether customers stay.** In Accenture's 2014 survey, 83% of dissatisfied claimants planned to switch or had switched insurer. In J.D. Power's 2025 study, 52% of customers who rated their digital claim poor or OK were likely to leave, against 4% of those who rated it highly.
+- **How you ask changes what people say.** Witnesses who talk to each other pick up details they never saw (Gabbert et al.), and loaded wording changes what they remember (Loftus & Palmer). So each person reports in their own chat, the questions are neutral, and the accounts are compared in code.
+- **People are already on WhatsApp.** It is the most used digital service in Peru (OSIPTEL, 2025), and a chatbot gets better answers than a web form (Xiao et al., 2020).
+
+Sources and caveats for every figure are in [docs/RESEARCH.md](docs/RESEARCH.md).
 
 ## How a case runs
+
+After the injury question, the agent sends two reply buttons. The tap is saved in code, so the path can't be skipped. **Solo yo** asks for a location pin and the loss (event, water level, property, damaged items, photos), then sends the review form; one approval closes the case and the PDF arrives in the chat. **Con otra persona** is the joint report:
 
 1. **Driver A** messages the insurer's WhatsApp number. The agent says it is an AI assistant and asks about injuries first. If anyone is hurt, it gives the emergency number and hands the case to a person.
 2. Driver A gets a link and a code, `JOIN XXXXXX`, to show **driver B**. B joins from their own phone, in their own language.
@@ -46,7 +64,7 @@ BothSides needs no message templates: both drivers write first, so every message
 | Amazon Transcribe | Voice notes, Spanish or English detected |
 | AWS Lambda | Router (inbound) and send (the only outbound path) |
 | Amazon SNS, Amazon SQS | Inbound events; dead-letter queue for the router |
-| Amazon DynamoDB | Cases, drivers, facts with evidence, processed message ids |
+| Amazon DynamoDB | Cases (path, status, location pin), people, facts with evidence, every message of every case, processed message ids |
 | Amazon S3 | Photos, voice notes, transcripts, report PDFs |
 | Amazon CloudWatch Logs | One JSON line per message: case, role, event; delivery statuses |
 | AWS CDK | The whole stack, deployed with one command |
@@ -102,7 +120,7 @@ Per case, the main cost is Claude on Bedrock. Measured on the full scripted case
 
 ## Local WhatsApp prototype (`WHATSAPP_ON=0`)
 
-`python -m pipeline.server` serves http://localhost:8765. The page's two phones play WhatsApp and Meta, and everything after Meta is the deployed code, run in one process:
+`python -m pipeline.server` serves http://localhost:8765 and the claims board at http://localhost:8765/board. The page's two phones play WhatsApp and Meta, and everything after Meta is the deployed code, run in one process:
 
 1. A phone's message becomes the webhook entry Meta posts. SNS hands it to `lambdas/router/handler.py` unchanged: dedupe, media copy, transcription, the AgentCore payload, Flow replies and delivery statuses.
 2. The agent runs with the same prompts, tools and reconciliation, on real Claude.
@@ -126,10 +144,23 @@ What the emulator can't tell is whether real WhatsApp opens a Flow that is still
 ```powershell
 .venv\Scripts\pip install -r agent\requirements.txt
 .venv\Scripts\python -m unittest discover -s tests -t .
-.venv\Scripts\python scripts\simulate_voice.py        # also simulate.py, simulate_pedestrian.py, simulate_nino.py, simulate_refusal.py
+.venv\Scripts\python scripts\simulate_solo.py         # also simulate_voice.py, simulate.py, simulate_pedestrian.py, simulate_nino.py, simulate_refusal.py
 ```
 
-The simulations run two scripted drivers against real Claude, with in-memory tables and WhatsApp, and fail on an assertion if the behaviour is wrong.
+`simulate_solo.py` runs the "Solo yo" path: an El Niño flood at home in Piura. The simulations run scripted people against real Claude, with in-memory tables and WhatsApp, and fail on an assertion if the behaviour is wrong.
+
+## Status
+
+| What | State |
+|---|---|
+| Joint report on AWS and real WhatsApp, PDF to both phones | Deployed and run |
+| 46 unit tests | Pass, no AWS calls |
+| Two paths, claims board and conversation log | Run end to end on the local prototype with a scripted model: 3 cases, no message rejected by the emulated Meta |
+| Two paths on AWS with Claude | Not deployed yet |
+| Approval Flow on a real phone | Flow in draft |
+| Real users | Not tested yet. Next: a five-person test measuring completion rate, minutes to an approved report, facts captured, planted conflicts caught and satisfaction |
+
+**What Claimline doesn't do:** it is the intake of a claim (first notice of loss). It doesn't check the policy or coverage, estimate damage, score fraud or pay. It hands the insurer a complete, evidence-backed case for its existing process.
 
 ## Layout
 
@@ -140,7 +171,7 @@ The simulations run two scripted drivers against real Claude, with in-memory tab
 | `lambdas/send` | The only code that sends: text, Flow, document |
 | `agent/` | The Strands agent: `main.py`, `prompts.py`, `tools.py`, `cases.py`, `reconcile.py`, `judge.py`, `report.py`, `channel.py` |
 | `flows/`, `scripts/flow.py` | The approval WhatsApp Flow |
-| `pipeline/` | Local WhatsApp prototype |
+| `pipeline/` | Local WhatsApp prototype and the claims board (`pipeline/web/board.html`) |
 | `scripts/` | Simulations |
 | `tests/` | Unit tests |
-| `docs/` | Architecture diagram (`architecture.png`, source in `docs/architecture/`), build spec, overview |
+| `docs/` | Architecture diagram (`architecture.png`, source in `docs/architecture/`), build spec, overview, [research](docs/RESEARCH.md), [past winners](docs/PAST_WINNERS.md) |

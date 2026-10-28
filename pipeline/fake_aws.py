@@ -157,6 +157,7 @@ def snapshot(case_id: str, calls: list[dict]) -> dict:
     for call in calls:
         if call["name"] == "reconcile_case" and call["result"].startswith("{"):
             reconciled = json.loads(call["result"])["facts"]
-    return {"caseId": case_id, "status": case.get("status", "OPEN"), "statusReason": case.get("statusReason", ""),
+    return {"caseId": case_id, "path": case.get("path", ""), "status": case.get("status", "OPEN"),
+            "statusReason": case.get("statusReason", ""),
             "approvals": cases.approvals(case_id), "facts": sorted(facts, key=lambda f: (f["by"], f["field"])),
             "reconciled": reconciled}

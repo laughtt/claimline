@@ -17,6 +17,18 @@ HANDOFF_CONTACT = os.environ.get("HANDOFF_CONTACT", "")
 # The static review Flow in flows/approval.json; "draft" until it is published
 APPROVAL_FLOW_ID = os.environ.get("APPROVAL_FLOW_ID", "")
 APPROVAL_FLOW_MODE = os.environ.get("APPROVAL_FLOW_MODE", "published")
+# Reply button ids of the path question, and the path each one picks
+PATH_BUTTONS = {"path_joint": "joint", "path_solo": "solo"}
+
+
+def path_choice_message(body: str, with_other_label: str, solo_label: str) -> dict:
+    """Two reply buttons; Meta allows button titles of up to 20 characters."""
+    labels = {"path_joint": with_other_label, "path_solo": solo_label}
+    return {
+        "type": "button",
+        "body": {"text": body[:1024]},
+        "action": {"buttons": [{"type": "reply", "reply": {"id": i, "title": t[:20]}} for i, t in labels.items()]},
+    }
 
 
 def approval_flow_message(token: str, heading: str, intro: str, agreed: str, disputed: str, body: str,
@@ -54,7 +66,7 @@ def approval_flow_message(token: str, heading: str, intro: str, agreed: str, dis
     }
 
 
-def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -> list:
+def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None, path: str = "joint") -> list:
     @tool
     def record_fact(field: str, about: str, value: str, quote: str, confidence: float = 0.8,
                     evidence_type: str = "text") -> str:
@@ -63,13 +75,16 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
         Args:
             field: One of signal_state, speed_kmh, direction, lane, impact_point,
                 time, location, injuries, damage_part, third_party_plate, weather,
-                cause, third_party_action. cause is a vehicle's manoeuvre and
+                cause, third_party_action, water_level, property. water_level is
+                how high flood water got, e.g. "1 m, up to the knees"; property
+                is what kind of property was damaged, e.g. "home", "shop",
+                "vehicle", "crops". cause is a vehicle's manoeuvre and
                 the reason the driver gives, e.g. "braked hard for a pedestrian"
                 or "braked suddenly, no reason seen". third_party_action is what
                 a pedestrian, cyclist or animal did, e.g. "pedestrian crossed
                 against the pedestrian light", or "none seen" when the driver
                 saw nobody.
-            about: Whose vehicle the fact is about: "A", "B", "scene" for
+            about: Whose vehicle or property the fact is about: "A", "B", "scene" for
                 location, time, weather and injuries, or "third_party" for
                 third_party_action. "I was going 40" from driver B is about
                 "B"; "the other car ran the light" from driver B is about "A".
@@ -122,6 +137,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             {"field": r.field, "status": r.status, "driver_A": r.value_a, "driver_B": r.value_b}
             for r in reconcile(facts_a, facts_b, same_meaning)
         ]
+        cases.save_reconciled(party.case_id, rows)
         return json.dumps({"you_are": party.role, "facts": rows}, ensure_ascii=False)
 
     @tool
@@ -140,6 +156,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             return "The other driver has not joined yet."
         channel.current().send(other.phone, text=text)
         cases.add_note(other, text)
+        cases.log_message(other, "out", "text", text)
         return f"Sent to driver {other.role}."
 
     @tool
@@ -185,7 +202,8 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             return "Not sent: the case is with a person now. Tell the driver they will be contacted."
         # Both drivers must see the same disputes; the model has left one out before
         facts_a, facts_b = cases.load_facts(party.case_id)
-        conflicts = {r.field for r in reconcile(facts_a, facts_b, same_meaning) if r.status == "CONFLICT"}
+        conflicts = set() if path == "solo" else {
+            r.field for r in reconcile(facts_a, facts_b, same_meaning) if r.status == "CONFLICT"}
         if set(disputed_fields) != conflicts:
             return (f"Not sent. The CONFLICT facts are {sorted(conflicts) or 'none'}: list exactly those "
                     f"in disputed and disputed_fields, then call send_approval_form again.")
@@ -194,6 +212,7 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             decision_label, approve_label, changes_label, comment_label, submit_label,
         )
         channel.current().send(party.phone, interactive=message)
+        cases.log_message(party, "out", "form", f"{body}\n\n{agreed}\n\n{disputed}")
         return ("Form sent; it reaches the driver before your reply. Answer with one short sentence "
                 "telling them to open it, nothing more.")
 
@@ -210,4 +229,37 @@ def build_tools(party: cases.Party, msg_id: str | None, media_key: str | None) -
             " Also tell the other driver with message_other_driver that a person will review the case.")
         return f"Case marked for a human. Tell the driver that {contact} will contact them.{told}"
 
+    @tool
+    def send_path_choice(body: str, with_other_label: str, solo_label: str) -> str:
+        """Ask whether someone else is involved, with two WhatsApp buttons.
+
+        The body is your whole message this turn: nothing you reply after it is sent.
+
+        Args:
+            body: The question, in the person's language, e.g. "¿Hay otra persona involucrada,
+                como otro conductor, o es un daño solo suyo?"
+            with_other_label: Button for "with another person", at most 20 characters,
+                e.g. "Con otra persona".
+            solo_label: Button for "just me", at most 20 characters, e.g. "Solo yo".
+        """
+        channel.current().send(party.phone, interactive=path_choice_message(body, with_other_label, solo_label))
+        cases.log_message(party, "out", "buttons", f"{body}\n[{with_other_label}] [{solo_label}]")
+        return "Buttons sent. Don't write anything else this turn."
+
+    @tool
+    def set_path(path: str) -> str:
+        """Save the person's answer when they say in words, not with a button, whether someone else is involved.
+
+        Args:
+            path: "joint" when another person is involved, "solo" when it is only them.
+        """
+        if path not in cases.PATHS:
+            return 'path must be "joint" or "solo".'
+        cases.set_path(party.case_id, path)
+        return f"Path saved: {path}. Carry on with that path from the next message."
+
+    if path == "solo":
+        return [record_fact, set_language, send_approval_form, handoff_human]
+    if not path:
+        return [record_fact, set_language, send_path_choice, set_path, handoff_human]
     return [record_fact, set_language, reconcile_case, message_other_driver, send_approval_form, handoff_human]

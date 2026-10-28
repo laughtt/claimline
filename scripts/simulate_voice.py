@@ -17,6 +17,7 @@ turn("A", "RESET")
 turn("B", "RESET")
 party_a, _ = turn("A", "Hola, acabo de tener un choque con otro coche en un cruce.", voice=True)
 turn("A", "No, nadie está herido, solo daños en los coches.", voice=True)
+turn("A", "", button="path_joint")
 turn("B", f"JOIN {party_a.case_id}")
 turn("B", "No, nobody is hurt.", voice=True)
 turn("A", "Fue en el cruce de la avenida Javier Prado con la avenida Arequipa, a las siete y cuarenta de la "

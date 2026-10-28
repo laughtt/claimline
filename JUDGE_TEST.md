@@ -54,11 +54,13 @@ Open http://localhost:8765.
 
 **Try it:**
 
-1. Choose a scenario at the top right: **"Los dos en verde"** (both drivers say their light was green), **"Frenazo por un peatón"** (driver A braked for a pedestrian that driver B never saw) or **"Lluvia del Fenómeno del Niño"** (in Piura, driver A says the El Niño rain flooded the road and made the car skid; driver B says it was only drizzling).
+1. Choose a scenario at the top right. The default, **"Solo yo · inundación del Niño"**, is a loss of one's own: phone A's home and phone B's shop are flooded in Piura. Tap **"Solo yo"** when the buttons arrive and send the 📍 pin. The "Con otra persona" (joint) scenarios are **"los dos en verde"** (both drivers say their light was green), **"frenazo por un peatón"** (driver A braked for a pedestrian that driver B never saw) and **"lluvia del Niño"** (in Piura, driver A says the El Niño rain flooded the road and made the car skid; driver B says it was only drizzling).
 2. Under each phone there is a demo script. Click its lines in order, alternating A and B, with **✍ texto** (text) or **🎙 voz** (a voice note read by ElevenLabs and transcribed back). You can also type freely, record with the microphone, or send a photo with 📷.
-3. Driver B joins with the code driver A receives (`JOIN XXXXXX`); the script fills it in for you.
+3. In a joint scenario, driver A taps **"Con otra persona"** and driver B joins with the code driver A receives (`JOIN XXXXXX`); the script fills it in for you.
 4. When a driver has given their version, the plate and the damage, a **"Revisar informe" / "Review report"** card arrives. Open it, choose **Apruebo / I approve** and send.
 5. After both approve, both phones receive **📄 Claimline-XXXXXX.pdf**. Click it to open the joint report.
+
+**Claims board.** Open http://localhost:8765/board (or **Tablero ↗**) next to the phones. Each case appears on the live map at its pin, with its path, its status, the full saved conversation, the facts with each person's words, the comparison for joint cases, and the PDF.
 
 The middle column shows every step of every message (webhook, transcription, agent, each tool call, delivery), the saved facts with their evidence, and the reconciliation table. Under each bubble, "webhook de Meta" and "mensaje a Meta" show the exact JSON. **Reiniciar todo** starts over.
 
@@ -69,7 +71,8 @@ Each agent turn takes 5 to 20 seconds, because each one is a real Claude call.
 Two scripted drivers run against real Claude, with in-memory tables and WhatsApp. Nothing is written to AWS. Each script fails with an assertion if the behaviour is wrong.
 
 ```powershell
-.venv\Scripts\python -m unittest discover -s tests -t .      # 35 unit tests, no AWS calls
+.venv\Scripts\python -m unittest discover -s tests -t .      # 46 unit tests, no AWS calls
+.venv\Scripts\python scripts\simulate_solo.py                 # "Solo yo": El Niño flood at home, one approval, PDF
 .venv\Scripts\python scripts\simulate_voice.py                # the whole case by voice, both approve, PDF built
 .venv\Scripts\python scripts\simulate_pedestrian.py           # a pedestrian only one driver saw, nobody blamed
 .venv\Scripts\python scripts\simulate_nino.py                 # El Niño rain: heavy rain vs drizzle, disputed, nobody blamed

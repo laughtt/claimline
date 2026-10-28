@@ -15,7 +15,7 @@ from strands import Agent
 from strands.models import BedrockModel
 
 from agent import cases, prompts, report
-from agent.tools import HANDOFF_CONTACT, build_tools
+from agent.tools import HANDOFF_CONTACT, PATH_BUTTONS, build_tools
 
 REGION = os.environ.get("AWS_REGION", "eu-west-1")
 MODEL_ID = os.environ.get("MODEL_ID", "eu.anthropic.claude-sonnet-5-5")
@@ -59,22 +59,66 @@ def invoke(payload, context):
             region_name=REGION,
         )
 
-    if payload.get("form"):
-        payload = {**payload, "review": record_form(party, payload["form"])}
     session = f"{party.case_id}-{party.role}"
-    agent = build_agent(party, event, payload.get("msgId"), payload.get("mediaKey"),
-                        session_manager=session_manager,
-                        messages=None if session_manager else LOCAL_HISTORY.get(session))
-    start = len(agent.messages)
-    result = agent(describe(payload))
+    reply, calls, agent, _ = run_turn(party, event, payload, session_manager=session_manager,
+                                      messages=None if session_manager else LOCAL_HISTORY.get(session))
     if not session_manager:
         LOCAL_HISTORY[session] = agent.messages
-    return {"reply": str(result).strip(), "caseId": party.case_id, "role": party.role, "event": event,
-            "tools": tool_calls(agent.messages[start:])}
+    return {"reply": reply, "caseId": party.case_id, "role": party.role, "event": event, "tools": calls}
+
+
+def run_turn(party, event, payload, session_manager=None, messages=None):
+    """One inbound message through code and the model; scripts/simulate.py runs turns the same way.
+
+    Returns the reply to send (empty when the turn sent buttons instead), the tool calls,
+    the agent and the model's result.
+    """
+    payload = take_in(party, payload)
+    agent = build_agent(party, event, payload.get("msgId"), payload.get("mediaKey"),
+                        session_manager=session_manager, messages=messages)
+    start = len(agent.messages)
+    result = agent(describe(payload))
+    calls = tool_calls(agent.messages[start:])
+    # The buttons' body is the message; a reply after it would repeat the question
+    reply = "" if any(c["name"] == "send_path_choice" for c in calls) else str(result).strip()
+    if reply:
+        cases.log_message(party, "out", "text", reply)
+    return reply, calls, agent, result
+
+
+def take_in(party, payload) -> dict:
+    """What code does with a message before the model sees it: log it, and save a pin, a path or a form."""
+    kind = "form" if payload.get("form") else "button" if payload.get("button") else payload.get("type", "text")
+    cases.log_message(party, "in", kind, said(payload), payload.get("mediaKey"))
+    if payload.get("type") == "location" and payload.get("location"):
+        cases.set_place(party.case_id, payload["location"])
+    choice = PATH_BUTTONS.get((payload.get("button") or {}).get("id"))
+    if choice and party.role == "A":
+        cases.set_path(party.case_id, choice)
+    if payload.get("form"):
+        payload = {**payload, "review": record_form(party, payload["form"])}
+    return payload
+
+
+def said(payload) -> str:
+    """The message as the person sent it, for the conversation log."""
+    kind = payload.get("type", "text")
+    if kind == "audio":
+        return (payload.get("transcript") or {}).get("text") or "(voice note, not transcribed)"
+    if payload.get("form"):
+        form = payload["form"]
+        return f"{form.get('decision', '')} {form.get('comment') or ''}".strip()
+    if payload.get("button"):
+        return payload["button"].get("title", "")
+    if kind == "location":
+        pin = payload.get("location") or {}
+        return pin.get("name") or pin.get("address") or f"{pin.get('latitude')}, {pin.get('longitude')}"
+    return payload.get("text") or ""
 
 
 def build_agent(party, event, msg_id, media_key, session_manager=None, messages=None) -> Agent:
-    """The agent for one turn of one driver; scripts/simulate.py builds it the same way."""
+    """The agent for one turn of one person."""
+    path = "joint" if party.role == "B" else cases.path(party.case_id)
     other = cases.other_party(party)
     injuries_from_a = ""
     if party.role == "B":
@@ -85,9 +129,9 @@ def build_agent(party, event, msg_id, media_key, session_manager=None, messages=
         model=model,
         system_prompt=prompts.system_prompt(
             party.role, party.case_id, event, other is not None, other.language if other else "",
-            injuries_from_a, cases.notes_for(party),
+            injuries_from_a, cases.notes_for(party), path,
         ),
-        tools=build_tools(party, msg_id, media_key),
+        tools=build_tools(party, msg_id, media_key, path),
         session_manager=session_manager,
         messages=messages,
         callback_handler=None,
@@ -111,11 +155,13 @@ def record_form(party, form) -> dict | None:
     decisions = cases.set_approval(party, decision, (form.get("comment") or "").strip())
     if handoff:
         cases.set_status(party.case_id, "HANDOFF", f"Driver {party.role} rejected the report twice without a correction")
-    # The second approval closes the case: the PDF goes to both drivers before the agent answers
-    sent = bool(decisions.get("A") == decisions.get("B") == "approve" and report.deliver(party.case_id))
+    # The last approval closes the case: the PDF goes out before the agent answers
+    complete = decision == "approve" and cases.status(party.case_id) == "APPROVED"
+    sent = bool(complete and report.deliver(party.case_id))
     print(json.dumps({"event": "form", "caseId": party.case_id, "role": party.role, "approvals": decisions,
                       "handoff": handoff, "reportSent": sent}))
-    return {"approvals": decisions, "handoff": handoff, "report_sent": sent}
+    return {"approvals": decisions, "handoff": handoff, "complete": complete, "report_sent": sent,
+            "solo": cases.path(party.case_id) == "solo"}
 
 
 def tool_calls(messages) -> list[dict]:
@@ -170,17 +216,28 @@ def describe(payload) -> str:
                     f"words, and that {contact} will review the case and contact them. Tell the other driver "
                     f"with message_other_driver that a person will review the case. Don't send the form again.]")
         decisions = review["approvals"]
-        other = next((d for role, d in decisions.items() if role != form["flow_token"][-1]), "not answered yet")
-        return (f"[The driver submitted the review form: {'approved the report' if form.get('decision') == 'approve' else 'asked for changes'}"
-                f"{f', with this comment: {comment}' if comment else ', no comment'}. "
-                f"The other driver's answer: {other}."
-                + (" Both drivers have approved and the PDF of the joint report has just been sent to both of "
-                   "them in this chat; they can keep it or forward it to their insurer. Nobody has sent it to "
-                   "an insurer.]" if review.get("report_sent") else
-                   " Both drivers have approved, but the PDF couldn't be generated; say a person will send it.]"
-                   if decisions.get("A") == decisions.get("B") == "approve" else "]"))
+        if review.get("solo"):
+            done = (" The report is complete and its PDF has just been sent in this chat." if review["report_sent"] else
+                    " The report is complete, but the PDF couldn't be generated; say a person will send it."
+                    if review.get("complete") else "")
+        else:
+            other = next((d for role, d in decisions.items() if role != form["flow_token"][-1]), "not answered yet")
+            done = (f" The other driver's answer: {other}."
+                    + (" Both drivers have approved and the PDF of the joint report has just been sent to both of "
+                       "them in this chat; they can keep it or forward it to their insurer. Nobody has sent it to "
+                       "an insurer." if review["report_sent"] else
+                       " Both drivers have approved, but the PDF couldn't be generated; say a person will send it."
+                       if review.get("complete") else ""))
+        return (f"[The person submitted the review form: "
+                f"{'approved the report' if form.get('decision') == 'approve' else 'asked for changes'}"
+                f"{f', with this comment: {comment}' if comment else ', no comment'}.{done}]")
+    if kind == "interactive" and payload.get("button"):
+        button = payload["button"]
+        meaning = {"joint": ": another person is involved, so it is a joint report with them",
+                   "solo": ": nobody else is involved, it is a loss of their own"}.get(PATH_BUTTONS.get(button.get("id")), "")
+        return f"[The person tapped the button \"{button.get('title', '')}\"{meaning}.]"
     if kind == "location":
-        return f"[The driver shared a location pin: {payload.get('location')}]"
+        return f"[The person shared a location pin: {payload.get('location')}]"
     if payload.get("mediaKey"):
         return f"[The driver sent a {kind}, saved as {payload['mediaKey']}. It is evidence for the report.]"
     return f"[The driver sent a {kind} message.]"

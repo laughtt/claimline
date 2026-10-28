@@ -31,6 +31,8 @@ TABLES = [
     ("events", "eventId", None),
     ("outreach", "eventId", "policyId"),
     ("messages", "msgId", None),
+    # Every message in and out of a case, in order (sk is the time in ns)
+    ("conversation", "caseId", "sk"),
 ]
 
 

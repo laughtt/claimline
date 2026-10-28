@@ -21,7 +21,7 @@ FLOW_FILE = pathlib.Path(__file__).parent.parent / "flows" / "approval.json"
 MEDIA_DIR = pathlib.Path(__file__).parent / ".data" / "meta"
 WINDOW_SECONDS = 24 * 3600
 # Meta's own limits for the parts of a flow message the agent writes
-LIMITS = {"header": 60, "body": 1024, "flow_cta": 20}
+LIMITS = {"header": 60, "body": 1024, "flow_cta": 20, "button_title": 20, "button_id": 256}
 TEXT_LIMIT = 4096
 
 
@@ -135,6 +135,8 @@ class FakeMeta:
             text = body.get("text", {}).get("body", "")
             if not text.strip() or len(text) > TEXT_LIMIT:
                 raise meta_error(100, f"text.body must be 1 to {TEXT_LIMIT} characters")
+        elif kind == "interactive" and (body.get("interactive") or {}).get("type") == "button":
+            self._check_buttons(body["interactive"])
         elif kind == "interactive":
             self._check_flow(body.get("interactive") or {})
         elif kind == "document":
@@ -145,6 +147,21 @@ class FakeMeta:
                 raise meta_error(100, "document needs a filename and a caption of at most 1024 characters")
         else:
             raise meta_error(100, f"type {kind} isn't one the agent sends")
+
+    def _check_buttons(self, interactive):
+        """Reply buttons: a body and one to three buttons with unique ids and short titles."""
+        if not 0 < len((interactive.get("body") or {}).get("text", "")) <= LIMITS["body"]:
+            raise meta_error(131009, f"body.text must be 1 to {LIMITS['body']} characters")
+        buttons = (interactive.get("action") or {}).get("buttons") or []
+        if not 1 <= len(buttons) <= 3:
+            raise meta_error(131009, "action.buttons must have 1 to 3 buttons")
+        ids = [(b.get("reply") or {}).get("id", "") for b in buttons]
+        if len(set(ids)) != len(ids) or any(b.get("type") != "reply" for b in buttons):
+            raise meta_error(131009, "each button must be a reply with a unique id")
+        for b in buttons:
+            reply = b["reply"]
+            if not 0 < len(reply.get("title", "")) <= LIMITS["button_title"] or len(reply["id"]) > LIMITS["button_id"]:
+                raise meta_error(131009, f"button titles must be 1 to {LIMITS['button_title']} characters")
 
     def _check_flow(self, interactive):
         if interactive.get("type") != "flow":

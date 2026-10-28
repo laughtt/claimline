@@ -1,11 +1,13 @@
-"""Case and party bookkeeping for BothSides (spec §3 and §8).
+"""Case and party bookkeeping (spec §3 and §8).
 
-Plain code, no LLM. A case is created when driver A writes for the first
-time; its id doubles as the join code driver B sends ("JOIN K7Q2MF").
+Plain code, no LLM. A case is created when someone writes for the first
+time, and they choose its path: "joint" with another person, whose join code
+is the case id ("JOIN K7Q2MF"), or "solo" for a loss of their own.
 Each phone has a pointer item in the parties table to its active case.
 """
 
 import hashlib
+import json
 import os
 import re
 import secrets
@@ -21,6 +23,7 @@ ddb = boto3.resource("dynamodb")
 cases_table = ddb.Table(os.environ.get("CASES_TABLE", "test-claimline-cases"))
 parties_table = ddb.Table(os.environ.get("PARTIES_TABLE", "test-claimline-parties"))
 facts_table = ddb.Table(os.environ.get("FACTS_TABLE", "test-claimline-facts"))
+conversation_table = ddb.Table(os.environ.get("CONVERSATION_TABLE", "test-claimline-conversation"))
 
 PHONE_SALT = os.environ.get("PHONE_SALT", "claimline")
 
@@ -37,8 +40,10 @@ SUBJECTS = {"A", "B", "scene", "third_party"}
 FIELDS = {
     "signal_state", "speed_kmh", "direction", "lane", "impact_point", "time",
     "location", "injuries", "damage_part", "third_party_plate", "weather",
-    "cause", "third_party_action",
+    "cause", "third_party_action", "water_level", "property",
 }
+# "joint": with another person, both write one report; "solo": a loss of one's own
+PATHS = {"joint", "solo"}
 # What a driver must have told before the two versions are compared
 VERSION_FIELDS = {"location", "time", "impact_point"}
 NOTES_KEPT = 5
@@ -186,7 +191,8 @@ def set_approval(party: Party, decision: str, comment: str) -> dict[str, str]:
         ExpressionAttributeValues={":d": decision, ":c": comment, ":t": int(time.time())},
     )
     decisions = approvals(party.case_id)
-    if decisions.get("A") == "approve" and decisions.get("B") == "approve":
+    needed = ("A",) if path(party.case_id) == "solo" else ("A", "B")
+    if all(decisions.get(role) == "approve" for role in needed):
         set_status(party.case_id, "APPROVED")
     return decisions
 
@@ -209,6 +215,51 @@ def rejected_without_correction(party: Party) -> bool:
 
 def status(case_id: str) -> str:
     return cases_table.get_item(Key={"caseId": case_id}).get("Item", {}).get("status", "OPEN")
+
+
+def path(case_id: str) -> str:
+    """ "joint", "solo", or "" while the person hasn't chosen."""
+    return cases_table.get_item(Key={"caseId": case_id}).get("Item", {}).get("path", "")
+
+
+def set_path(case_id: str, value: str) -> None:
+    cases_table.update_item(Key={"caseId": case_id}, UpdateExpression="SET #p = :p",
+                            ExpressionAttributeNames={"#p": "path"}, ExpressionAttributeValues={":p": value})
+
+
+def set_place(case_id: str, pin: dict) -> None:
+    """A WhatsApp location pin; strings, because DynamoDB takes no floats."""
+    label = pin.get("name") or pin.get("address") or ""
+    cases_table.update_item(
+        Key={"caseId": case_id}, UpdateExpression="SET lat = :lat, lon = :lon, place = :place",
+        ExpressionAttributeValues={":lat": str(pin["latitude"]), ":lon": str(pin["longitude"]), ":place": label},
+    )
+
+
+def save_reconciled(case_id: str, rows: list[dict]) -> None:
+    """The last comparison, for the board."""
+    cases_table.update_item(Key={"caseId": case_id}, UpdateExpression="SET reconciled = :r",
+                            ExpressionAttributeValues={":r": json.dumps(rows, ensure_ascii=False)})
+
+
+def log_message(party: Party, direction: str, kind: str, text: str, media_key: str | None = None) -> None:
+    """Every message in or out of a case, in order, so the whole conversation can be read back."""
+    item = {"caseId": party.case_id, "sk": f"{time.time_ns():020d}", "role": party.role,
+            "direction": direction, "kind": kind, "text": text or "", "at": int(time.time())}
+    if media_key:
+        item["media"] = media_key
+    conversation_table.put_item(Item=item)
+
+
+def conversation(case_id: str) -> list[dict]:
+    items = conversation_table.query(KeyConditionExpression="caseId = :c",
+                                     ExpressionAttributeValues={":c": case_id})["Items"]
+    return sorted(items, key=lambda i: i["sk"])
+
+
+def all_cases() -> list[dict]:
+    # One page is enough for the board of a demo; a deployed board would paginate
+    return cases_table.scan()["Items"]
 
 
 def approvals(case_id: str) -> dict[str, str]:
@@ -248,7 +299,9 @@ def _new_case(phone: str, h: str) -> Party:
 
 
 def _join(case_id: str, phone: str, h: str) -> tuple[Party | None, str]:
-    if "Item" not in cases_table.get_item(Key={"caseId": case_id}):
+    case = cases_table.get_item(Key={"caseId": case_id}).get("Item")
+    # A solo case has no join code to give out
+    if not case or case.get("path") == "solo":
         return None, "bad_code"
     parties = load_parties(case_id)
     for p in parties:
@@ -258,6 +311,7 @@ def _join(case_id: str, phone: str, h: str) -> tuple[Party | None, str]:
         return None, "case_full"
     party = Party(case_id, "B", phone, h)
     _put_party(party, int(time.time()))
+    set_path(case_id, "joint")
     return party, "joined"
 
 

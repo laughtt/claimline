@@ -69,7 +69,7 @@ class AgentConstruct(Construct):
             ],
             resources=[self.memory.memory_arn],
         ))
-        for suffix in ("cases", "parties", "facts"):
+        for suffix in ("cases", "parties", "facts", "conversation"):
             tables[suffix].grant_read_write_data(role)
         send_fn.grant_invoke(role)
         # The report PDF is written under reports/
@@ -94,6 +94,7 @@ class AgentConstruct(Construct):
                 "CASES_TABLE": tables["cases"].table_name,
                 "PARTIES_TABLE": tables["parties"].table_name,
                 "FACTS_TABLE": tables["facts"].table_name,
+                "CONVERSATION_TABLE": tables["conversation"].table_name,
                 "SEND_FUNCTION": send_fn.function_name,
                 "WHATSAPP_NUMBER": WHATSAPP_NUMBER,
                 "APPROVAL_FLOW_ID": APPROVAL_FLOW_ID,

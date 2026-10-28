@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 import handler  # noqa: E402
 
 from agent import cases, main, tools  # noqa: E402
+from pipeline import memory_store  # noqa: E402
 
 
 class FormReplyTest(unittest.TestCase):
@@ -52,6 +53,9 @@ class FlowMessageTest(unittest.TestCase):
 
 class RecordFormTest(unittest.TestCase):
     party = cases.Party("ABC234", "B", "+1", "h")
+
+    def setUp(self):
+        memory_store.install()
 
     def test_form_from_an_earlier_case_is_ignored(self):
         with mock.patch.object(cases, "set_approval") as save:
