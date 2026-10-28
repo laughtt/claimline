@@ -247,6 +247,8 @@ class Handler(server.Handler):
             html = html.replace("detrás corre el código desplegado, con Claude real. Solo se cambian los clientes de AWS.",
                                 "detrás corre el código real de Claimline, con respuestas guionizadas en lugar de Claude (desplegado en AWS, responde Claude).")
             html = html.replace("el agente usa Claude real", "el agente responde con un guion (en AWS, con Claude)")
+            html = html.replace(' download="${esc(d.filename)}"', "")
+            html = html.replace("</body>", "<script>" + (SITE / "autoplay.js").read_text(encoding="utf-8") + "</script></body>")
             return self._send(200, html.replace("</body>", (SITE / "banner.html").read_text(encoding="utf-8") + "</body>").encode(),
                               "text/html; charset=utf-8")
         if path == "/board":
@@ -262,7 +264,7 @@ class Handler(server.Handler):
         if path == "/login":
             given = parse_qs(self._body().decode()).get("password", [""])[0]
             if hmac.compare_digest(given.encode(), PASSWORD.encode()):
-                return self._redirect("/demo", f"cl_demo={token()}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax")
+                return self._redirect("/demo?autoplay=1", f"cl_demo={token()}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax")
             time.sleep(1)
             return self._redirect("/login?error=1")
         if self._guard():
