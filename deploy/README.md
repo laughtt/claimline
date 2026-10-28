@@ -2,7 +2,7 @@
 
 A landing page at `/`, a login at `/login`, and behind it the local prototype (`/demo`, two phones) and the claims board (`/board`).
 
-The host has no AWS credentials, so `deploy/demo.py` swaps Claude for a scripted model. Everything else is the real code: the router and send Lambdas, the emulated Meta, the tools, cases, reconciliation, the PDF and the board. The scripted model answers the suggested lines of the "Solo yo · inundación del Niño" and "Con otra persona · lluvia del Niño" scenarios in any order; other input gets a note that the demo is scripted. On start it seeds three cases on the board. All visitors share the same two phones and the in-memory state; the service restarts daily.
+The host has no AWS credentials, so `deploy/demo.py` swaps Claude for a scripted model. Everything else is the real code: the router and send Lambdas, the emulated Meta, the tools, cases, reconciliation, the PDF and the board. The demo plays itself on a loop, server side: the "Solo yo · inundación del Niño" scenario (two floods, each approved with its PDF), then "Con otra persona · lluvia del Niño" (a crash with two conflicts, both drivers approve, PDF to both). Every visitor watches the same story without clicking, and a bar on the page says what is happening. Older events are dropped each round and the in-memory cases are cleared every six rounds; the service also restarts daily.
 
 | File | What |
 |---|---|

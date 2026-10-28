@@ -10,6 +10,7 @@ Usage, from the repo root: DEMO_PASSWORD=... PORT=8795 python -m deploy.demo
 """
 
 import hashlib
+import json
 import hmac
 import os
 import pathlib
@@ -24,7 +25,7 @@ os.environ.update(AWS_ACCESS_KEY_ID="demo", AWS_SECRET_ACCESS_KEY="demo", ELEVEN
 os.environ.setdefault("PORT", "8795")
 
 from pipeline import server  # noqa: E402
-from agent import cases, main, tools  # noqa: E402
+from agent import cases, judge, main, report, tools  # noqa: E402
 
 PASSWORD = os.environ["DEMO_PASSWORD"]
 SECRET = secrets.token_bytes(32)
@@ -32,6 +33,8 @@ SITE = pathlib.Path(__file__).parent / "site"
 PUBLIC = {"/login", "/logout", "/favicon.ico"}
 
 tools.same_meaning = lambda field, a, b: field.startswith("location")
+judge.same_meaning = tools.same_meaning
+report.same_meaning = tools.same_meaning
 
 FORM_ES = dict(cta="Revisar informe", decision_label="Su decisión", approve_label="Apruebo: es lo que dije",
                changes_label="Algo está mal", comment_label="Comentario", submit_label="Enviar")
@@ -264,70 +267,140 @@ class Handler(server.Handler):
         if path == "/login":
             given = parse_qs(self._body().decode()).get("password", [""])[0]
             if hmac.compare_digest(given.encode(), PASSWORD.encode()):
-                return self._redirect("/demo?autoplay=1", f"cl_demo={token()}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax")
+                return self._redirect("/demo", f"cl_demo={token()}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax")
             time.sleep(1)
             return self._redirect("/login?error=1")
         if self._guard():
             return
         if path == "/api/reset":
-            server.memory_store.install()
-            main.LOCAL_HISTORY.clear()
-            language.clear()
-            server.log.emit({"kind": "reset"})
-            threading.Thread(target=seed, daemon=True).start()
-            return self._json({"reset": True})
+            return self._json({"reset": False, "note": "The public demo restarts by itself"})
         super().do_POST()
 
 
 def turns_done() -> int:
-    return sum(1 for e in server.log.events if e.get("kind") == "turn_done")
+    return sum(1 for e in server.log.events[trim[0]:] if e and e.get("kind") == "turn_done")
 
 
-def seed():
-    """Three cases on the board, made by the same code a visitor drives: two floods and a crash in the rain."""
-    def say(who, **job):
-        done = turns_done()
-        server.turns.put({"who": who, **job})
-        deadline = time.time() + 30
-        while turns_done() == done and time.time() < deadline:
-            time.sleep(0.05)
+# Pages that load later get events from the current round only; older events are dropped from memory
+trim = [0]
+_after = server.log.after
 
-    say("A", text="Hola, anoche la lluvia del Niño inundó mi casa. La quebrada se desbordó y entró el agua con lodo.")
-    say("A", text="No, nadie está herido, estamos bien.")
-    say("A", button={"id": "path_solo", "title": "Solo yo"})
-    say("A", location={"latitude": -5.1955, "longitude": -80.6235, "name": "Calle Ayacucho, Castilla, Piura"})
-    say("A", text="Fue anoche, como a las dos de la madrugada. Llovió fuerte toda la noche y el agua llegó como a un metro, hasta las rodillas.")
-    say("A", text="Es mi casa. Se malograron la refrigeradora, la cocina, dos colchones y la puerta de madera.")
-    say("A", text="Eso es todo.")
-    solo = next(c["caseId"] for c in cases.all_cases() if c.get("path") == "solo")
-    say("A", form={"flow_token": f"{solo}-A", "decision": "approve", "comment": ""})
-    say("B", text="Hi, my shop got flooded last night in the El Niño rain.")
-    say("B", text="No, nobody is hurt.")
-    say("B", button={"id": "path_solo", "title": "Just me"})
-    say("B", location={"latitude": -5.2662, "longitude": -80.6752, "name": "Jr. Comercio, Catacaos, Piura"})
-    say("B", text="It was around eleven PM. The street flooded with the heavy rain and the water came into the shop, about forty centimeters high.")
-    say("A", text="RESET")
-    say("A", text="Hola, acabo de tener un choque. Me chocaron por detrás en plena lluvia.")
-    say("A", text="No, nadie está herido.")
-    say("A", button={"id": "path_joint", "title": "Con otra persona"})
-    joint = next(c["caseId"] for c in cases.all_cases() if c.get("path") == "joint")
-    say("A", text="Fue en la avenida Sánchez Cerro con la avenida Grau, en Piura, a las ocho y veinte de la noche. Llovía muy fuerte "
-                  "por el Fenómeno del Niño y la pista estaba inundada. Iba a unos treinta kilómetros por hora, el agua me hizo patinar y "
-                  "frené. El otro carro me golpeó en el parachoques trasero.")
-    say("A", location={"latitude": -5.1932, "longitude": -80.6368, "name": "Av. Sánchez Cerro con Av. Grau, Piura"})
-    say("B", text=f"JOIN {joint}")
-    say("B", text="No, nobody is hurt.")
-    say("B", text="It was at Sanchez Cerro and Grau avenues in Piura, around eight twenty PM. It was only drizzling. I was doing about "
-                  "forty and the car in front braked suddenly for no reason. I hit its rear bumper with my front bumper.")
-    say("A", text="RESET")
-    say("B", text="RESET")
+
+def after(last: int, wait: float = 20) -> list[dict]:
+    return _after(max(last, trim[0]), wait)
+
+
+server.log.after = after
+
+
+def new_round(scenario: str) -> None:
+    for who in ("A", "B"):
+        say(who, text="RESET", pause=0)
+    with server.log.cond:
+        trim[0] = len(server.log.events)
+        for i in range(trim[0]):
+            server.log.events[i] = None
     server.log.emit({"kind": "reset"})
+    server.log.emit({"kind": "demo", "scenario": scenario, "text": TITLES[scenario]})
+
+
+def narrate(text: str) -> None:
+    server.log.emit({"kind": "demo", "text": text})
+
+
+def say(who, pause=2.4, **job):
+    done = turns_done()
+    server.turns.put({"who": who, **job})
+    deadline = time.time() + 30
+    while turns_done() == done and time.time() < deadline:
+        time.sleep(0.05)
+    time.sleep(pause)
+
+
+def approve(who):
+    token = next(e["body"]["interactive"]["action"]["parameters"]["flow_token"] for e in reversed(server.log.events)
+                 if e and e.get("kind") == "wa_out" and e.get("who") == who
+                 and e["body"].get("interactive", {}).get("action", {}).get("parameters", {}).get("flow_token"))
+    narrate(f"Person {who} approves the report in the WhatsApp Flow")
+    say(who, form={"flow_token": token, "decision": "approve", "comment": ""}, pause=3.5)
+
+
+TITLES = {"solo": "Just me: two floods in Piura, one person each", "nino": "With someone else: a crash in the El Niño rain"}
+SOLO_A = ["Hola, anoche la lluvia del Niño inundó mi casa. La quebrada se desbordó y entró el agua con lodo.",
+          "No, nadie está herido, estamos bien.", ("button", "path_solo", "Solo yo"),
+          ("pin", -5.1955, -80.6235, "Calle Ayacucho, Castilla, Piura"),
+          "Fue anoche, como a las dos de la madrugada. Llovió fuerte toda la noche y el agua llegó como a un metro, hasta las rodillas.",
+          "Es mi casa. Se malograron la refrigeradora, la cocina, dos colchones y la puerta de madera.",
+          "No tengo fotos ahora, se las mando mañana.", "Eso es todo."]
+SOLO_B = ["Hi, my shop got flooded last night in the El Niño rain.", "No, nobody is hurt.", ("button", "path_solo", "Just me"),
+          ("pin", -5.2662, -80.6752, "Jr. Comercio, Catacaos, Piura"),
+          "It was around eleven PM. The street flooded with the heavy rain and the water came into the shop, about forty centimeters high.",
+          "It's my shop. The water ruined the counter, the fridge and the stock of rice and sugar sacks.", "That's all, no photos."]
+NINO = [("A", "Hola, acabo de tener un choque. Me chocaron por detrás en plena lluvia."), ("A", "No, nadie está herido."),
+        ("A", ("button", "path_joint", "Con otra persona")),
+        ("A", "Fue en la avenida Sánchez Cerro con la avenida Grau, en Piura, a las ocho y veinte de la noche. Llovía muy fuerte por el "
+              "Fenómeno del Niño y la pista estaba inundada. Iba a unos treinta kilómetros por hora, el agua me hizo patinar y frené. "
+              "El otro carro me golpeó en el parachoques trasero."),
+        ("A", ("pin", -5.1932, -80.6368, "Av. Sánchez Cerro con Av. Grau, Piura")),
+        ("B", "JOIN {code}"), ("B", "No, nobody is hurt."),
+        ("B", "It was at Sanchez Cerro and Grau avenues in Piura, around eight twenty PM. It was only drizzling. I was doing about forty "
+              "and the car in front braked suddenly for no reason. I hit its rear bumper with my front bumper."),
+        ("A", "Sí, estoy seguro, llovía a cántaros y el agua llegaba a media llanta."),
+        ("B", "I'm sure, it was just a light drizzle, my wipers were on slow."),
+        ("A", "Mi parachoques trasero está hundido."), ("A", "XYZ-456"), ("A", "Eso es todo."),
+        ("B", "My front bumper and right headlight are broken."), ("B", "The other car's plate is ABC-123"), ("B", "That's all.")]
+
+
+def send(who, line, code=""):
+    if isinstance(line, str):
+        say(who, text=line.replace("{code}", code))
+    elif line[0] == "button":
+        say(who, button={"id": line[1], "title": line[2]})
+    else:
+        say(who, location={"latitude": line[1], "longitude": line[2], "name": line[3]})
+
+
+def play_forever():
+    """The demo plays itself on a loop, server side, so every visitor watches the same story without clicking."""
+    rounds = 0
+    while True:
+        try:
+            if rounds % 6 == 0:
+                server.memory_store.install()
+                main.LOCAL_HISTORY.clear()
+                language.clear()
+            new_round("solo")
+            for line in SOLO_A:
+                send("A", line)
+            approve("A")
+            narrate("📄 The PDF report arrived in the chat. Tap it to open.")
+            for line in SOLO_B:
+                send("B", line)
+            approve("B")
+            narrate("📄 Both reports approved, PDFs in the chats, cases on the Claims board. Next: a crash in the rain…")
+            time.sleep(12)
+            new_round("nino")
+            code = ""
+            for who, line in NINO:
+                send(who, line, code)
+                if line == ("button", "path_joint", "Con otra persona"):
+                    code = next(c["caseId"] for c in sorted(cases.all_cases(), key=lambda c: c.get("createdAt", 0), reverse=True)
+                                if c.get("path") == "joint")
+                if line == "Eso es todo.":
+                    approve("A")
+            approve("B")
+            narrate("📄 Both drivers approved. The joint report PDF is in both chats; the disputes stay in each driver's words.")
+            time.sleep(14)
+        except Exception as e:
+            print(json.dumps({"event": "demo_loop_error", "error": f"{type(e).__name__}: {e}"}), flush=True)
+            time.sleep(5)
+        rounds += 1
 
 
 if __name__ == "__main__":
     server.MEDIA_DIR.mkdir(parents=True, exist_ok=True)
     port = int(os.environ["PORT"])
     httpd = server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    threading.Thread(target=seed, daemon=True).start()
-    print(f"Claimline public demo on http://127.0.0.1:{port} (scripted model, login required)", flush=True)
+    threading.Thread(target=play_forever, daemon=True).start()
+    print(f"Claimline public demo on http://127.0.0.1:{port} (scripted model, plays by itself, login required)", flush=True)
     httpd.serve_forever()
