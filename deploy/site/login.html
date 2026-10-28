@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claimline · Sign in</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Public+Sans:wght@400;600;700&display=swap">
+<style>
+:root { --ink: #102A2E; --cream: #F6F3EC; --mint: #C9D8D6; --orange: #F0A35E; --wa: #25D366; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; font: 16px/1.5 "Public Sans", system-ui, sans-serif;
+       color: var(--cream); background: radial-gradient(900px 500px at 80% 0%, #1F5F99 0%, transparent 60%), var(--ink); }
+.card { width: 100%; max-width: 420px; background: rgba(255,253,248,.06); border: 1px solid rgba(201,216,214,.2); border-radius: 24px; padding: 36px 32px;
+        backdrop-filter: blur(10px); box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; text-decoration: none; color: inherit; }
+.logo i { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--wa), #128C7E); }
+h1 { font: 700 28px/1.2 "Libre Baskerville", Georgia, serif; margin: 28px 0 8px; }
+p { color: var(--mint); margin: 0 0 24px; }
+label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(201,216,214,.35); background: rgba(16,42,46,.6); color: var(--cream); font-size: 16px; }
+input:focus { outline: 2px solid var(--orange); border-color: transparent; }
+button { width: 100%; margin-top: 18px; padding: 14px; border: 0; border-radius: 999px; background: var(--orange); color: var(--ink); font-weight: 700; font-size: 16px; cursor: pointer; }
+button:hover { background: #F5B57A; }
+.error { display: none; background: rgba(200,100,42,.18); border: 1px solid rgba(240,163,94,.5); color: #FFD9B8; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 16px; }
+.note { font-size: 13px; color: #A9BDBA; margin: 22px 0 0; }
+.back { display: inline-block; margin-top: 18px; font-size: 14px; color: var(--mint); }
+</style>
+</head>
+<body>
+<main class="card">
+  <a class="logo" href="/"><i></i>Claimline</a>
+  <h1>Sign in to the demo</h1>
+  <p>Two WhatsApp phones and the insurer’s claims board, running the real Claimline code.</p>
+  <div class="error" id="error">That password isn’t right. Try again.</div>
+  <form method="post" action="/login">
+    <label for="password">Demo password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+    <button type="submit">Open the demo →</button>
+  </form>
+  <p class="note">In this public demo the agent’s replies are scripted; the version deployed on AWS answers with Claude on Amazon Bedrock.</p>
+  <a class="back" href="/">← Back to the overview</a>
+</main>
+<script>if (location.search.includes("error")) document.getElementById("error").style.display = "block";</script>
+</body>
+</html>

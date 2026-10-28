@@ -1,0 +1,25 @@
+aws-hackaton.adtomic.co {
+	tls {
+		issuer acme
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+	request_body {
+		max_size 20MB
+	}
+	handle / {
+		root * /opt/claimline/app/deploy/site
+		rewrite * /index.html
+		file_server
+	}
+	handle /architecture.png {
+		root * /opt/claimline/app/docs
+		file_server
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8795
+	}
+}

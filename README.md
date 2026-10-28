@@ -12,6 +12,7 @@ Built for the AWS CDS Agentic AI Partner Hackathon (October 2026).
 ![Architecture](docs/architecture.png)
 
 - **Try it:** [JUDGE_TEST.md](JUDGE_TEST.md). The local WhatsApp prototype runs the deployed code in a browser, with no phone needed.
+- **Try it online:** https://aws-hackaton.adtomic.co (password on request). The public demo runs the same code with scripted replies in place of Claude, because that host has no AWS credentials; see [deploy/README.md](deploy/README.md).
 - **What is ours:** [ORIGINAL_WORK.md](ORIGINAL_WORK.md).
 - **The research behind it:** [docs/RESEARCH.md](docs/RESEARCH.md). **Earlier AWS hackathon winners:** [docs/PAST_WINNERS.md](docs/PAST_WINNERS.md).
 
@@ -174,4 +175,5 @@ What the emulator can't tell is whether real WhatsApp opens a Flow that is still
 | `pipeline/` | Local WhatsApp prototype and the claims board (`pipeline/web/board.html`) |
 | `scripts/` | Simulations |
 | `tests/` | Unit tests |
+| `deploy/` | The public demo at aws-hackaton.adtomic.co: landing page, login, scripted-model server |
 | `docs/` | Architecture diagram (`architecture.png`, source in `docs/architecture/`), build spec, overview, [research](docs/RESEARCH.md), [past winners](docs/PAST_WINNERS.md) |

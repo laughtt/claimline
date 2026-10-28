@@ -1,0 +1,16 @@
+[Unit]
+Description=Claimline public demo (scripted model, login required)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/claimline/app
+EnvironmentFile=/opt/claimline/.env
+Environment=PORT=8795 PYTHONUNBUFFERED=1
+ExecStart=/opt/claimline/venv/bin/python -m deploy.demo
+Restart=always
+# State is in memory; a daily restart re-seeds the three demo cases
+RuntimeMaxSec=1d
+
+[Install]
+WantedBy=multi-user.target

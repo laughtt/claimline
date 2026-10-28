@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claimline · Claims intake on WhatsApp</title>
+<meta name="description" content="Neutral claims intake over WhatsApp, built on AWS for the losses El Niño leaves behind in Peru.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root { --ink: #102A2E; --ink2: #183A3F; --cream: #F6F3EC; --paper: #FFFDF8; --line: #DCD6C8; --text: #14262A; --soft: #4A5A5C;
+        --orange: #F0A35E; --rust: #A84E16; --blue: #1F5F99; --mint: #C9D8D6; --wa: #25D366; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font: 17px/1.6 "Public Sans", system-ui, sans-serif; color: var(--text); background: var(--cream); }
+a { color: inherit; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.serif { font-family: "Libre Baskerville", Georgia, serif; }
+nav { position: sticky; top: 0; z-index: 10; background: rgba(16,42,46,.92); backdrop-filter: blur(8px); color: var(--cream); }
+nav .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+.logo { font-weight: 700; font-size: 20px; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.logo i { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--wa), #128C7E); display: inline-block; }
+nav .links { margin-left: auto; display: flex; gap: 22px; font-size: 15px; }
+nav .links a { text-decoration: none; opacity: .85; }
+nav .links a:hover { opacity: 1; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; font-weight: 600; text-decoration: none; border: 0; cursor: pointer; font-size: 16px; }
+.btn.primary { background: var(--orange); color: var(--ink); }
+.btn.primary:hover { background: #F5B57A; }
+.btn.ghost { border: 1.5px solid rgba(246,243,236,.4); color: var(--cream); }
+.btn.small { padding: 8px 16px; font-size: 14px; }
+header.hero { background: radial-gradient(1200px 500px at 85% -10%, #1F5F99 0%, transparent 60%), var(--ink); color: var(--cream); padding: 88px 0 96px; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; }
+.eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 13px; font-weight: 700; color: var(--orange); }
+.hero h1 { font-size: clamp(40px, 6vw, 68px); line-height: 1.08; margin: 16px 0 20px; }
+.hero p.lead { font-size: 20px; color: var(--mint); max-width: 34em; }
+.hero .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 32px; }
+.phone { background: #0B1F22; border-radius: 36px; padding: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.45); max-width: 360px; justify-self: center; width: 100%; }
+.phone .top { background: #075E54; color: #fff; border-radius: 24px 24px 0 0; padding: 14px 18px; font-weight: 600; font-size: 15px; display: flex; gap: 10px; align-items: center; }
+.phone .top i { width: 30px; height: 30px; border-radius: 50%; background: var(--wa); display: inline-block; }
+.phone .top small { display: block; font-weight: 400; opacity: .8; font-size: 12px; }
+.phone .chat { background: #ECE5DD; border-radius: 0 0 24px 24px; padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 380px; font-size: 14px; color: #111; }
+.b { max-width: 82%; padding: 8px 12px; border-radius: 10px; box-shadow: 0 1px 1px rgba(0,0,0,.08); opacity: 0; transform: translateY(6px); animation: pop .4s forwards; }
+.b.in { background: #fff; align-self: flex-start; }
+.b.out { background: #DCF8C6; align-self: flex-end; }
+.b.btns { background: #fff; align-self: flex-start; padding: 0; overflow: hidden; }
+.b.btns div { padding: 8px 12px; }
+.b.btns span { display: block; border-top: 1px solid #eee; padding: 8px; text-align: center; color: #128C7E; font-weight: 600; }
+.b:nth-child(1) { animation-delay: .2s } .b:nth-child(2) { animation-delay: 1s } .b:nth-child(3) { animation-delay: 1.8s }
+.b:nth-child(4) { animation-delay: 2.6s } .b:nth-child(5) { animation-delay: 3.4s } .b:nth-child(6) { animation-delay: 4.2s }
+@keyframes pop { to { opacity: 1; transform: none; } }
+section { padding: 88px 0; }
+section h2 { font-size: clamp(30px, 4vw, 44px); line-height: 1.15; margin: 10px 0 18px; }
+section .sub { color: var(--soft); font-size: 19px; max-width: 46em; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 40px; }
+.stat { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 26px; }
+.stat b { display: block; font: 700 40px/1.1 "Libre Baskerville", Georgia, serif; color: var(--blue); margin-bottom: 10px; }
+.stat span { color: var(--soft); font-size: 15px; }
+.src { color: #6A7476; font-size: 13px; margin-top: 18px; }
+.dark { background: var(--ink); color: var(--cream); }
+.dark .sub { color: var(--mint); }
+.paths { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+.path { background: var(--ink2); border: 1px solid #2B5157; border-radius: 22px; padding: 32px; }
+.path .tag { display: inline-block; background: rgba(240,163,94,.15); color: var(--orange); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
+.path h3 { font-size: 26px; margin: 14px 0 8px; }
+.path p { color: var(--mint); margin: 0; }
+.steps { counter-reset: s; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
+.step { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 26px; position: relative; }
+.step::before { counter-increment: s; content: counter(s); position: absolute; top: -14px; left: 22px; width: 30px; height: 30px; border-radius: 50%; background: var(--orange); color: var(--ink); font-weight: 700; display: grid; place-items: center; font-size: 15px; }
+.step h3 { margin: 6px 0 6px; font-size: 19px; }
+.step p { margin: 0; color: var(--soft); font-size: 15.5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 32px; font-size: 16px; }
+th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--soft); }
+td:first-child { font-weight: 600; width: 38%; }
+.arch { margin-top: 36px; background: #fff; border-radius: 18px; border: 1px solid var(--line); padding: 16px; }
+.arch img { width: 100%; height: auto; display: block; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.chip { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 14px; }
+.status { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 36px; }
+.box { border-radius: 18px; padding: 26px; border: 1px solid var(--line); background: var(--paper); }
+.box h3 { margin: 0 0 10px; font-size: 18px; }
+.box ul { margin: 0; padding-left: 20px; color: var(--soft); }
+.box.ok h3 { color: var(--blue); } .box.todo h3 { color: var(--rust); }
+.final { text-align: center; }
+.final .cta { justify-content: center; display: flex; gap: 14px; margin-top: 28px; flex-wrap: wrap; }
+footer { background: var(--ink); color: var(--mint); font-size: 14px; padding: 28px 0; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .hero .wrap, .paths, .status { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  nav .links { display: none; }
+  header.hero { padding: 56px 0 64px; }
+}
+@media (max-width: 520px) { .stats { grid-template-columns: 1fr; } td:first-child { width: auto; } }
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#"><i></i>Claimline</a>
+  <div class="links"><a href="#problem">Problem</a><a href="#paths">Two paths</a><a href="#how">How it works</a><a href="#science">Research</a><a href="#aws">AWS</a></div>
+  <a class="btn primary small" href="/login">Open the demo</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <div class="eyebrow">AWS CDS Agentic AI Partner Hackathon · 2026</div>
+    <h1 class="serif">Report a loss on WhatsApp. Get a fair, complete claim.</h1>
+    <p class="lead">Claimline is an AI agent on Amazon Bedrock AgentCore that takes a claim by text, voice note, photo and location pin, compares both sides’ accounts in plain code without blaming anyone, and hands the insurer a case on a live map.</p>
+    <div class="cta"><a class="btn primary" href="/login">Open the live demo →</a><a class="btn ghost" href="#how">How it works</a></div>
+  </div>
+  <div class="phone" aria-label="Example WhatsApp conversation">
+    <div class="top"><i></i><div>Claimline<small>AI assistant of your insurer</small></div></div>
+    <div class="chat">
+      <div class="b out">Anoche la lluvia del Niño inundó mi casa 🌧️</div>
+      <div class="b in">Siento mucho lo de su casa. Antes que nada: ¿hay alguien herido?</div>
+      <div class="b out">No, estamos bien.</div>
+      <div class="b btns"><div>¿Hay otra persona involucrada, o es un daño solo suyo?</div><span>Con otra persona</span><span>Solo yo</span></div>
+      <div class="b out">📍 Calle Ayacucho, Castilla, Piura</div>
+      <div class="b in">Gracias. ¿Hasta dónde llegó el agua?</div>
+    </div>
+  </div>
+</div></header>
+
+<section id="problem"><div class="wrap">
+  <div class="eyebrow" style="color:var(--rust)">The problem</div>
+  <h2 class="serif">Disasters bring thousands of claims at once, and most go unreported or unpaid.</h2>
+  <p class="sub">After El Niño’s rains, people file from flooded homes with no power and no office to visit. Reports arrive incomplete, and when two people are involved, their stories don’t match.</p>
+  <div class="stats">
+    <div class="stat"><b>1.6M</b><span>people affected by the 2017 Niño Costero in Peru, with up to US$3.1B in losses</span></div>
+    <div class="stat"><b>~2%</b><span>Peru’s insurance penetration, premiums as a share of GDP (2025)</span></div>
+    <div class="stat"><b>82%</b><span>of disaster losses uninsured across 10 Latin American countries</span></div>
+    <div class="stat"><b>83%</b><span>of dissatisfied claimants planned to switch or had switched insurer</span></div>
+  </div>
+  <p class="src">Sources: IGP; Infomercado citing INDECI; AM Best (2026); Swiss Re; Accenture (2014). Full list with caveats in the repo’s docs/RESEARCH.md.</p>
+</div></section>
+
+<section id="paths" class="dark"><div class="wrap">
+  <div class="eyebrow">One number, two paths</div>
+  <h2 class="serif">Every claim starts with one tap.</h2>
+  <p class="sub">After the injury question, the person picks a path with a WhatsApp reply button. The choice is saved in code, so no step can be skipped.</p>
+  <div class="paths">
+    <div class="path"><span class="tag">Con otra persona · With someone else</span><h3 class="serif">A neutral joint report</h3>
+      <p>After a crash, both people message the same number, each in their own chat and language. Claimline compares the two versions in plain code, asks only about what doesn’t match, and never says who is at fault. Both approve the report in a WhatsApp Flow and receive the PDF.</p></div>
+    <div class="path"><span class="tag">Solo yo · Just me</span><h3 class="serif">A loss of one’s own</h3>
+      <p>A home or shop flooded in the El Niño rains. The agent asks for a location pin, when it happened, how high the water got and what was damaged, then sends the report to approve. One approval closes the case and the PDF arrives in the chat.</p></div>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="eyebrow" style="color:var(--rust)">How it works</div>
+  <h2 class="serif">From a voice note to an adjuster’s map in minutes.</h2>
+  <div class="steps">
+    <div class="step"><h3>Report</h3><p>Text, voice notes (Amazon Transcribe), photos and a location pin, any time, in Spanish or English.</p></div>
+    <div class="step"><h3>Collect each fact</h3><p>A Strands agent on Bedrock AgentCore asks one question at a time and saves every fact with the person’s own words as evidence.</p></div>
+    <div class="step"><h3>Compare in code</h3><p>Each fact is AGREED, ONLY_A, ONLY_B or CONFLICT. Claude only judges whether two free-text values mean the same; no AI decides fault.</p></div>
+    <div class="step"><h3>Approve</h3><p>Each person reviews the draft in a WhatsApp Flow. Approving means “this records what I said”, not “I accept the other version”.</p></div>
+    <div class="step"><h3>PDF</h3><p>The report is built in code as a PDF, stored in S3 and sent back in the same chat.</p></div>
+    <div class="step"><h3>Claims board</h3><p>The insurer sees every case on a live map, with the whole conversation, the facts, the comparison and the PDF.</p></div>
+  </div>
+</div></section>
+
+<section id="science" style="background:var(--paper);border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div class="wrap">
+  <div class="eyebrow" style="color:var(--rust)">Built on research</div>
+  <h2 class="serif">Each finding became a rule in the code.</h2>
+  <table>
+    <tr><th>Finding</th><th>What Claimline does</th></tr>
+    <tr><td>Witnesses who talk to each other pick up details they never saw (Gabbert et al., 2003–2006)</td><td>Each person reports in their own chat and never sees the other’s answers</td></tr>
+    <tr><td>One loaded verb changes remembered speed and invents broken glass (Loftus &amp; Palmer, 1974)</td><td>Neutral questions; the agent never suggests a speed, a cause or a fault</td></tr>
+    <tr><td>Agreement between witnesses can be contamination, not proof</td><td>Plain code compares the facts and asks only about conflicts</td></tr>
+    <tr><td>A chatbot gets more informative, specific answers than a web form (Xiao et al., 2020)</td><td>WhatsApp, one question at a time, the person’s own words saved</td></tr>
+    <tr><td>Being kept informed is what keeps claimants (J.D. Power, 2019–2025)</td><td>Approval and the PDF arrive in the same chat</td></tr>
+  </table>
+</div></section>
+
+<section id="aws"><div class="wrap">
+  <div class="eyebrow" style="color:var(--rust)">Built on AWS</div>
+  <h2 class="serif">Serverless, pay per use, one command to deploy.</h2>
+  <p class="sub">The whole stack is AWS CDK and deploys into the insurer’s own account. With no traffic, it costs almost nothing; in a flood it scales with the claims.</p>
+  <div class="chips">
+    <span class="chip">AWS End User Messaging Social (WhatsApp)</span><span class="chip">Amazon Bedrock AgentCore Runtime &amp; Memory</span>
+    <span class="chip">Claude on Amazon Bedrock</span><span class="chip">Strands Agents</span><span class="chip">Amazon Transcribe</span>
+    <span class="chip">AWS Lambda</span><span class="chip">Amazon SNS &amp; SQS</span><span class="chip">Amazon DynamoDB</span><span class="chip">Amazon S3</span><span class="chip">AWS CDK</span>
+  </div>
+  <div class="arch"><img src="/architecture.png" alt="Architecture: WhatsApp to End User Messaging Social, SNS, router Lambda, AgentCore agent with Claude, DynamoDB and S3, send Lambda back to WhatsApp"></div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="eyebrow" style="color:var(--rust)">Where it stands</div>
+  <h2 class="serif">What’s proven, and what’s next.</h2>
+  <div class="status">
+    <div class="box ok"><h3>Done</h3><ul>
+      <li>Joint report deployed on AWS and real WhatsApp, PDF delivered to both phones</li>
+      <li>46 unit tests pass; simulations assert the agent never blames anyone</li>
+      <li>Both paths, the conversation log and the claims board run end to end on the prototype</li></ul></div>
+    <div class="box todo"><h3>Next</h3><ul>
+      <li>Both paths on AWS with Claude, and the approval Flow published</li>
+      <li>A five-person test: completion rate, minutes to an approved report, conflicts caught</li>
+      <li>A pilot with an insurer. Claimline is intake only: no coverage check, damage estimate, fraud score or payment</li></ul></div>
+  </div>
+</div></section>
+
+<section class="dark final"><div class="wrap">
+  <h2 class="serif">Try it: two phones, one claims board.</h2>
+  <p class="sub" style="margin:0 auto">The demo runs the real Claimline code in your browser. In this public version the agent’s replies are scripted; the deployed version answers with Claude on Amazon Bedrock.</p>
+  <div class="cta"><a class="btn primary" href="/login">Sign in to the demo →</a></div>
+</div></section>
+
+<footer><div class="wrap"><span>Claimline · AWS CDS Agentic AI Partner Hackathon, October 2026</span><span>Built with Amazon Bedrock AgentCore and AWS End User Messaging Social</span></div></footer>
+</body>
+</html>
