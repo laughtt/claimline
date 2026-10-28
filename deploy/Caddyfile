@@ -15,6 +15,11 @@ aws-hackaton.adtomic.co {
 		rewrite * /index.html
 		file_server
 	}
+	handle /assets/* {
+		root * /opt/claimline/app/deploy/site
+		header Cache-Control "public, max-age=604800"
+		file_server
+	}
 	handle /architecture.png {
 		root * /opt/claimline/app/docs
 		file_server
