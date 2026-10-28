@@ -47,16 +47,23 @@ nav .links a:hover { opacity: 1; }
 .btn.small { padding: 8px 16px; font-size: 14px; }
 
 /* Hero with rain */
-.hero { position: relative; background: radial-gradient(1000px 520px at 85% -10%, #1F5F99 0%, transparent 60%), linear-gradient(180deg, #0C2226, var(--ink)); color: var(--cream); padding: 88px 0 110px; overflow: hidden; }
+.hero { position: relative; background: radial-gradient(1000px 520px at 85% -10%, #1F5F99 0%, transparent 60%), linear-gradient(180deg, #0C2226, var(--ink)); color: var(--cream); padding: 56px 0 90px; overflow: hidden; }
 #rain { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .drop { position: absolute; top: -12%; width: 1.5px; height: 70px; background: linear-gradient(transparent, rgba(127,182,230,.55)); animation: fall linear infinite; }
 @keyframes fall { to { transform: translate3d(-60px, 125vh, 0); } }
 .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 70px; background: linear-gradient(180deg, transparent, rgba(46,125,190,.25)); }
 .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; position: relative; z-index: 1; }
-.hero h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.07; margin: 16px 0 20px; }
+.hero h1 { font-size: clamp(36px, 4.4vw, 56px); line-height: 1.08; margin: 14px 0 16px; }
+.hero .wrap > * { min-width: 0; }
 .hero h1 em { font-style: normal; color: var(--orange); }
-.hero .lead { font-size: 20px; color: var(--mint); max-width: 33em; margin: 0; }
+.hero .lead { font-size: 18px; color: var(--mint); max-width: 33em; margin: 0; }
 .hero .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 32px; }
+.wins { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px; max-width: 620px; }
+.win { display: flex; gap: 12px; align-items: flex-start; background: rgba(255,255,255,.06); border: 1px solid rgba(201,216,214,.18); border-radius: 16px; padding: 14px 16px; backdrop-filter: blur(4px); }
+.win .wi { font-size: 22px; line-height: 1.2; flex: none; }
+.win b { display: block; font-size: 16px; color: var(--cream); }
+.win span:not(.wi) { display: block; font-size: 14px; color: var(--mint); line-height: 1.45; margin-top: 2px; }
+.win:hover { border-color: var(--orange); }
 .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
 .pill { font-size: 13px; padding: 5px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid rgba(201,216,214,.2); }
 
@@ -270,6 +277,7 @@ footer .fine { color: #93ABA8; font-size: 12.5px; }
   .cmp .row.head { display: none; }
 }
 @media (max-width: 560px) {
+  .wins { grid-template-columns: 1fr; }
   .stats, .steps, .sol, .side, .pipe, .world { grid-template-columns: 1fr; }
   td:first-child { width: auto; }
   section { padding: 72px 0; }
@@ -296,10 +304,15 @@ footer .fine { color: #93ABA8; font-size: 12.5px; }
   <div class="wrap">
     <div>
       <div class="eyebrow reveal">AWS CDS Agentic AI Partner Hackathon · 2026</div>
-      <h1 class="serif reveal" style="--d:.1s">When <em>El Niño</em> strikes, every claim starts with a WhatsApp message.</h1>
-      <p class="lead reveal" style="--d:.2s">Floods, huaicos, storms and car crashes in the rain. Claimline is an AI agent on Amazon Bedrock AgentCore that takes the claim by voice note, photo and location pin, from one person or from both people involved, and never says who is at fault.</p>
+      <h1 class="serif reveal" style="--d:.1s">When <em>El Niño</em> strikes, claims start on WhatsApp.</h1>
+      <p class="lead reveal" style="--d:.2s">Floods, huaicos, storms and crashes in the rain, from one person or two. An AI agent on Amazon Bedrock AgentCore takes the claim by voice, photo and pin, and never decides who is at fault.</p>
       <div class="cta reveal" style="--d:.3s"><a class="btn primary" href="/login">Open the live demo →</a><a class="btn ghost" href="#paths">One person or two</a></div>
-      <div class="pills reveal" style="--d:.4s"><span class="pill">🌧️ El Niño floods</span><span class="pill">⛰️ Huaicos</span><span class="pill">🌪️ Storms</span><span class="pill">🚗 Car crashes</span><span class="pill">🏪 Shops &amp; SMEs</span><span class="pill">🌾 Farms</span></div>
+      <div class="wins">
+        <div class="win reveal" style="--d:.4s"><span class="wi">⚡</span><div><b>Claim filed in minutes</b><span>Voice note, photo and pin on WhatsApp, at any hour. No app, no call centre.</span></div></div>
+        <div class="win reveal" style="--d:.5s"><span class="wi">👥</span><div><b>One person or two</b><span>Floods, huaicos, storms and crashes, all on one number.</span></div></div>
+        <div class="win reveal" style="--d:.6s"><span class="wi">⚖️</span><div><b>Fair by design</b><span>Both versions compared in code. The AI never decides who is at fault.</span></div></div>
+        <div class="win reveal" style="--d:.7s"><span class="wi">📄</span><div><b>Paperwork done</b><span>Report approved in the chat, PDF sent, case on the insurer’s map.</span></div></div>
+      </div>
     </div>
     <div class="phone reveal" style="--d:.3s" aria-label="Animated WhatsApp conversation with Claimline">
       <div class="top"><span class="av"></span><div>Claimline<small>AI assistant of your insurer</small></div><span class="tag" id="ptag">Just me · El Niño flood</span></div>
