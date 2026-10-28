@@ -244,6 +244,9 @@ class Handler(server.Handler):
         if path == "/demo":
             html = server.WEB.read_text(encoding="utf-8")
             html = re.sub(r'<option value="(semaforo|peaton)">[^<]*</option>', "", html)
+            html = html.replace("detrás corre el código desplegado, con Claude real. Solo se cambian los clientes de AWS.",
+                                "detrás corre el código real de Claimline, con respuestas guionizadas en lugar de Claude (desplegado en AWS, responde Claude).")
+            html = html.replace("el agente usa Claude real", "el agente responde con un guion (en AWS, con Claude)")
             return self._send(200, html.replace("</body>", (SITE / "banner.html").read_text(encoding="utf-8") + "</body>").encode(),
                               "text/html; charset=utf-8")
         if path == "/board":
