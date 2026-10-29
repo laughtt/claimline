@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claimline · Disaster claims on WhatsApp</title>
-<meta name="description" content="Claimline takes disaster and crash claims on WhatsApp, by voice note, photo and pin, from one person or two. Built on Amazon Bedrock AgentCore.">
+<title>Claimline · One report both sides approve</title>
+<meta name="description" content="After a crash, each driver reports on WhatsApp from their own phone. Claimline compares both versions, asks only about the differences and sends one report both approve. It also takes natural-disaster claims.">
 <meta name="theme-color" content="#0B1113">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="preload" as="image" href="/assets/hero.webp">
+<link rel="preload" as="image" href="/assets/crash-hero.webp">
 <style>
 :root {
   --bg: #0B1113; --bg2: #10181B; --bg3: #162125;
@@ -61,13 +61,13 @@ nav .links a:hover { color: var(--text); }
 
 /* Hero */
 .hero { min-height: 100dvh; padding: 0; display: grid; align-items: center; overflow: hidden; isolation: isolate; }
-.hero .photo { position: absolute; inset: 0; z-index: -2; background: url(/assets/hero.webp) center 40% / cover no-repeat; transform: scale(1.06); animation: settle 2.6s var(--ease) forwards; }
+.hero .photo { position: absolute; inset: 0; z-index: -2; background: url(/assets/crash-hero.webp) center 62% / cover no-repeat; transform: scale(1.06); animation: settle 2.6s var(--ease) forwards; }
 .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
-  linear-gradient(90deg, rgba(11, 17, 19, .96) 0%, rgba(11, 17, 19, .82) 38%, rgba(11, 17, 19, .35) 70%, rgba(11, 17, 19, .55) 100%),
+  linear-gradient(90deg, rgba(11, 17, 19, .97) 0%, rgba(11, 17, 19, .88) 40%, rgba(11, 17, 19, .6) 70%, rgba(11, 17, 19, .72) 100%),
   linear-gradient(0deg, var(--bg) 0%, rgba(11, 17, 19, 0) 30%); }
 @keyframes settle { to { transform: scale(1); } }
 .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 56px; align-items: center; padding-top: 96px; padding-bottom: 72px; width: 100%; }
-.hero h1 { font-size: clamp(44px, 5.6vw, 78px); line-height: 1.02; letter-spacing: -.045em; margin: 22px 0 0; max-width: 14ch; }
+.hero h1 { font-size: clamp(44px, 5.6vw, 78px); line-height: 1.02; letter-spacing: -.045em; margin: 22px 0 0; max-width: 15ch; }
 .hero h1 em { font-style: normal; color: var(--accent); }
 .hero .lede { color: #C3CED0; font-size: 20px; max-width: 40ch; }
 .hero .cta { display: flex; gap: 14px; margin-top: 38px; flex-wrap: wrap; }
@@ -108,6 +108,17 @@ nav .links a:hover { color: var(--text); }
 .wa-head b { display: block; font-weight: 600; line-height: 1.2; }
 .wa-head .who span { color: var(--soft); font-size: 12px; }
 .chat { flex: 1; padding: 14px 10px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; overflow: hidden; font-size: 13.5px; line-height: 1.4; }
+/* Two handsets: driver A behind, driver B in front */
+.duo { position: relative; justify-self: end; width: 570px; height: 740px; perspective: 1800px; }
+.dev { margin: 0; position: absolute; --pw: 288px; }
+.dev.a { left: 0; top: 74px; z-index: 1; }
+.dev.b { right: 0; top: 0; z-index: 2; }
+.dev.a .phone { transform: rotateY(16deg) rotateX(4deg) scale(.94); }
+.dev.b .phone { transform: rotateY(-14deg) rotateX(4deg); }
+.duo:hover .dev .phone { transform: rotateY(0) rotateX(0); }
+.dev figcaption { margin-top: 16px; text-align: center; font: 500 12px/1 "Geist Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.flow { display: flex; align-items: center; gap: 6px; }
+.flow i { color: #53BDEB; font-size: 16px; }
 .floor { position: absolute; left: 10%; right: 10%; bottom: -34px; height: 40px; border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, .55), transparent 70%); filter: blur(8px); z-index: -1; }
 .msg { max-width: 82%; padding: 7px 10px 8px; border-radius: 10px; animation: pop .45s var(--ease) both; }
 .msg.in-msg { background: var(--wa-in); align-self: flex-start; border-top-left-radius: 3px; }
@@ -189,7 +200,17 @@ nav .links a:hover { color: var(--text); }
 .big-cmp { margin-top: 56px; font-size: 16.5px; border-radius: var(--r); border: 1px solid var(--line); background: var(--bg2); padding: 26px 32px 14px; }
 .big-cmp .cmp-row { grid-template-columns: 140px minmax(0, 1fr) minmax(0, 1fr) 100px; gap: 20px; padding: 16px 0; }
 .big-cmp .cmp-row.head { font-size: 13px; padding-bottom: 6px; }
-.big-cmp .st { font-size: 12.5px; }
+.big-cmp .st { font-size: 12.5px; opacity: 0; transform: translateY(6px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.big-cmp.shown .st { opacity: 1; transform: none; }
+.big-cmp.shown .cmp-row:nth-child(3) .st { transition-delay: .35s; }
+.big-cmp.shown .cmp-row:nth-child(4) .st { transition-delay: .7s; }
+.big-cmp.shown .cmp-row:nth-child(5) .st { transition-delay: 1.05s; }
+.cmp-done { display: flex; flex-wrap: wrap; gap: 14px 30px; padding: 18px 0 10px; border-top: 1px solid var(--line); opacity: 0; transition: opacity .8s var(--ease) 1.6s; }
+.big-cmp.shown .cmp-done { opacity: 1; }
+.cmp-done span { display: inline-flex; align-items: center; gap: 8px; }
+.cmp-done i { color: var(--agree); font-size: 20px; }
+.cmp-done .pdf { margin-left: auto; color: var(--soft); }
+.cmp-done .pdf i { color: var(--accent); }
 .studies { margin-top: 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; }
 .study b { display: block; font-size: clamp(30px, 3vw, 42px); font-weight: 600; letter-spacing: -.04em; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .study b small { font-size: .5em; font-weight: 400; color: var(--dim); letter-spacing: 0; margin: 0 4px; }
@@ -302,7 +323,7 @@ footer .src { margin: 0 0 10px; }
   nav .links { display: none; }
   nav .btn { margin-left: auto; }
   .hero .wrap { grid-template-columns: 1fr; gap: 48px; padding-top: 120px; }
-  .stage { justify-self: start; }
+  .duo { justify-self: center; }
   .nino-grid, .how, .gap, footer .wrap { grid-template-columns: 1fr; }
   .world, .studies { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sat { aspect-ratio: 16 / 10; max-width: 560px; }
@@ -320,9 +341,14 @@ footer .src { margin: 0 0 10px; }
   .hero .wrap { padding-bottom: 32px; }
   .cell.photo-cell::before { background: linear-gradient(0deg, rgba(11, 17, 19, .98) 30%, rgba(11, 17, 19, .7) 62%, rgba(11, 17, 19, .2)); }
   .fair { grid-template-columns: 1fr; gap: 16px; }
-  .stage { justify-self: center; --pw: min(300px, 82vw); }
-  .phone { transform: none; }
-  .stage:hover .phone { transform: none; }
+  .duo { width: min(350px, 100%); height: 600px; justify-self: center; }
+  .dev { --pw: 256px; }
+  .dev.a { top: 44px; }
+  .dev.a .phone { transform: scale(.92); transform-origin: left top; }
+  .dev.b .phone, .duo:hover .dev .phone { transform: none; }
+  .dev.a figcaption { display: none; }
+  .dev figcaption { margin-top: 12px; }
+  .cmp-done .pdf { margin-left: 0; }
   .timeline { grid-template-columns: 1fr; }
   .gap .copy { padding: 40px 24px; }
   .gap .row { grid-template-columns: 1fr; gap: 20px; }
@@ -346,6 +372,7 @@ footer .src { margin: 0 0 10px; }
   .final .wrap { padding-bottom: 88px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .big-cmp .st, .cmp-done { opacity: 1; transform: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .reveal, .in { opacity: 1; transform: none; }
   .hero .photo { transform: none; }
@@ -358,56 +385,93 @@ footer .src { margin: 0 0 10px; }
 <nav id="nav"><div class="wrap">
   <a class="logo" href="#top"><span class="mark"><i class="ph-fill ph-drop"></i></span>Claimline</a>
   <div class="links">
-    <a href="#crash">Crashes</a>
-    <a href="#nino">El Niño</a>
+    <a href="#crash">Agreement</a>
+    <a href="#paths">Two paths</a>
     <a href="#how">How it works</a>
+    <a href="#nino">Disasters</a>
     <a href="#board">For insurers</a>
-    <a href="#aws">AWS</a>
   </div>
   <a class="btn primary small" href="/login">Open the demo</a>
 </div></nav>
 
 <header class="hero" id="top">
-  <div class="photo" role="img" aria-label="Aerial view of a neighbourhood under floodwater in Ica, Peru, January 2017"></div>
+  <div class="photo" role="img" aria-label="Two cars after a rear-end collision on a city street"></div>
   <div class="wrap">
     <div>
       <div class="eyebrow in">AWS CDS Agentic AI Hackathon 2026</div>
-      <h1 class="in" style="--d:.1s">After a crash or a flood, the claim starts on <em>WhatsApp.</em></h1>
-      <p class="lede in" style="--d:.2s">An AI agent takes car crash and natural-disaster claims by voice note, photo and pin. It never decides who is at fault.</p>
+      <h1 class="in" style="--d:.1s">Two drivers, two versions, <em>one report</em> both approve.</h1>
+      <p class="lede in" style="--d:.2s">Each driver reports on their own phone. Claimline compares both versions, asks only about the differences, and never decides fault.</p>
       <div class="cta in" style="--d:.3s">
         <a class="btn primary" href="/login">Open the demo <i class="ph ph-arrow-right"></i></a>
-        <a class="btn ghost" href="#how">How it works</a>
+        <a class="btn ghost" href="#crash">How they agree</a>
       </div>
     </div>
-    <div class="stage in" style="--d:.35s">
-      <div class="phone" aria-label="A crash claim and a flood claim on WhatsApp, as they run in the demo">
-        <span class="btn-side vol-up"></span><span class="btn-side vol-down"></span><span class="btn-side action"></span><span class="btn-side power"></span>
-        <div class="screen">
-          <div class="island"></div>
-          <div class="statusbar"><span class="mono">20:24</span><span class="sb-icons"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
-          <div class="wa-head"><i class="ph ph-caret-left"></i><span class="av"><i class="ph-fill ph-drop"></i></span><div class="who"><b>Claimline</b><span>AI assistant · online</span></div><i class="ph ph-video-camera"></i><i class="ph ph-phone"></i></div>
-          <div class="chat" id="chat" aria-live="off"></div>
-          <div class="wa-foot"><div class="field"><i class="ph ph-smiley"></i><span>Message</span><i class="ph ph-paperclip"></i><i class="ph ph-camera"></i></div><span class="mic"><i class="ph-fill ph-microphone"></i></span></div>
-          <div class="homebar"></div>
+    <div class="duo in" style="--d:.35s" aria-label="The demo's crash claim: two drivers, each on their own phone, end with one joint report">
+      <figure class="dev a">
+        <div class="phone">
+          <span class="btn-side vol-up"></span><span class="btn-side vol-down"></span><span class="btn-side action"></span><span class="btn-side power"></span>
+          <div class="screen">
+            <div class="island"></div>
+            <div class="statusbar"><span class="mono">20:31</span><span class="sb-icons"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+            <div class="wa-head"><i class="ph ph-caret-left"></i><span class="av"><i class="ph-fill ph-drop"></i></span><div class="who"><b>Claimline</b><span>en línea</span></div><i class="ph ph-video-camera"></i><i class="ph ph-phone"></i></div>
+            <div class="chat" id="chatA" aria-live="off"></div>
+            <div class="wa-foot"><div class="field"><i class="ph ph-smiley"></i><span>Message</span><i class="ph ph-paperclip"></i><i class="ph ph-camera"></i></div><span class="mic"><i class="ph-fill ph-microphone"></i></span></div>
+            <div class="homebar"></div>
+          </div>
         </div>
-      </div>
+        <figcaption>Driver A, in Spanish</figcaption>
+      </figure>
+      <figure class="dev b">
+        <div class="phone">
+          <span class="btn-side vol-up"></span><span class="btn-side vol-down"></span><span class="btn-side action"></span><span class="btn-side power"></span>
+          <div class="screen">
+            <div class="island"></div>
+            <div class="statusbar"><span class="mono">20:31</span><span class="sb-icons"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+            <div class="wa-head"><i class="ph ph-caret-left"></i><span class="av"><i class="ph-fill ph-drop"></i></span><div class="who"><b>Claimline</b><span>online</span></div><i class="ph ph-video-camera"></i><i class="ph ph-phone"></i></div>
+            <div class="chat" id="chatB" aria-live="off"></div>
+            <div class="wa-foot"><div class="field"><i class="ph ph-smiley"></i><span>Message</span><i class="ph ph-paperclip"></i><i class="ph ph-camera"></i></div><span class="mic"><i class="ph-fill ph-microphone"></i></span></div>
+            <div class="homebar"></div>
+          </div>
+        </div>
+        <figcaption>Driver B, in English</figcaption>
+      </figure>
       <div class="floor"></div>
     </div>
   </div>
-  <div class="credit">Ica, Peru, January 2017. Photo: Ministerio de Defensa del Perú, CC BY 2.0</div>
+  <div class="credit">Rear-end collision, June 2026. Photo: Wikimedia Commons, CC0</div>
 </header>
+
+<section id="crash">
+  <div class="wrap">
+    <h2 class="reveal" style="max-width:17ch">Two versions of one crash become one report.</h2>
+    <p class="lede reveal" style="--d:.1s">Plain code labels each fact AGREED, ONLY_A, ONLY_B or CONFLICT. The agent asks once about each conflict, in neutral words. Disputes stay in each driver's own words, and both approve a report that records what each said, without accepting the other's version.</p>
+    <div class="cmp big-cmp reveal" style="--d:.15s" aria-label="Comparison of two drivers' accounts of a crash in the rain">
+      <div class="cmp-row head"><span>Fact</span><span>Driver A, wrote in Spanish</span><span>Driver B, wrote in English</span><span></span></div>
+      <div class="cmp-row"><span class="f">Time</span><q>a las ocho y veinte</q><q>around eight twenty PM</q><span class="st ok">AGREED</span></div>
+      <div class="cmp-row"><span class="f">Impact</span><q>me golpeó en el parachoques trasero</q><q>I hit its rear bumper</q><span class="st ok">AGREED</span></div>
+      <div class="cmp-row"><span class="f">Weather</span><q>llovía muy fuerte, la pista inundada</q><q>it was only drizzling</q><span class="st no">CONFLICT</span></div>
+      <div class="cmp-row"><span class="f">Why A braked</span><q>el agua me hizo patinar</q><q>braked suddenly for no reason</q><span class="st no">CONFLICT</span></div>
+      <div class="cmp-done"><span><i class="ph-fill ph-check-circle"></i>Driver A approved</span><span><i class="ph-fill ph-check-circle"></i>Driver B approved</span><span class="pdf"><i class="ph ph-file-pdf"></i>joint-report.pdf sent to both</span></div>
+    </div>
+    <div class="studies">
+      <div class="study reveal"><b>40.8 <small>vs</small> 31.8 mph</b><p>Speed witnesses estimated when the question said "smashed" instead of "contacted". So Claimline's questions never suggest a speed, a cause or a fault.</p><cite>Loftus and Palmer, 1974</cite></div>
+      <div class="study reveal" style="--d:.08s"><b>71% <small>vs</small> 0%</b><p>Witnesses who talked about the event reported details they never saw. So each driver reports in a separate chat and never sees the other's answers.</p><cite>Gabbert, Memon and Allan, 2003 (quoted second-hand)</cite></div>
+      <div class="study reveal" style="--d:.16s"><b>52% <small>vs</small> 4%</b><p>Customers likely to leave after a digital claim they rated poor or OK, against those who rated it highly. The report and the PDF arrive in the same chat, in minutes.</p><cite>J.D. Power, 2025 (US)</cite></div>
+    </div>
+  </div>
+</section>
 
 <section id="paths">
   <div class="wrap">
     <div class="eyebrow reveal">One number, two paths</div>
-    <h2 class="reveal" style="--d:.05s;margin-top:18px">Crashes and disasters, on the same number.</h2>
+    <h2 class="reveal" style="--d:.05s;margin-top:18px">One number for crashes, and for disasters too.</h2>
     <p class="lede reveal" style="--d:.1s">After asking whether anyone is hurt, Claimline sends two WhatsApp buttons. The choice is saved in code, so no step gets skipped.</p>
     <div class="bento">
       <article class="cell photo-cell reveal">
-        <img src="/assets/crash.webp" alt="Two cars after a rear-end collision on a city street, with a traffic officer" loading="lazy" width="1800" height="1200">
-        <div class="tag"><i class="ph ph-users"></i>With someone else</div>
+        <img src="/assets/crash2.webp" alt="A delivery truck with its front smashed after a collision" loading="lazy" width="1600" height="1038">
+        <div class="tag"><i class="ph ph-users"></i>With someone else · the core</div>
         <h3>Two drivers, two phones, one fair report.</h3>
-        <p>Each driver reports from their own chat, in their own language. The versions are compared in code, and both approve the joint report.</p>
+        <p>The core of Claimline: each person reports from their own chat, in their own language, and both approve the joint report.</p>
         <div class="kinds">
           <span class="live"><i class="ph ph-car-profile"></i>Car crash</span>
           <span><i class="ph ph-motorcycle"></i>Motorbike and car</span>
@@ -433,21 +497,20 @@ footer .src { margin: 0 0 10px; }
   </div>
 </section>
 
-<section id="crash">
-  <div class="wrap">
-    <h2 class="reveal" style="max-width:17ch">Two versions of one crash. The AI never picks a side.</h2>
-    <p class="lede reveal" style="--d:.1s">Plain code labels each fact AGREED, ONLY_A, ONLY_B or CONFLICT. The agent asks once about each conflict, in neutral words, and the dispute stays in the report in each driver's own words.</p>
-    <div class="cmp big-cmp reveal" style="--d:.15s" aria-label="Comparison of two drivers' accounts of a crash in the rain">
-      <div class="cmp-row head"><span>Fact</span><span>Driver A, wrote in Spanish</span><span>Driver B, wrote in English</span><span></span></div>
-      <div class="cmp-row"><span class="f">Time</span><q>a las ocho y veinte</q><q>around eight twenty PM</q><span class="st ok">AGREED</span></div>
-      <div class="cmp-row"><span class="f">Impact</span><q>me golpeó en el parachoques trasero</q><q>I hit its rear bumper</q><span class="st ok">AGREED</span></div>
-      <div class="cmp-row"><span class="f">Weather</span><q>llovía muy fuerte, la pista inundada</q><q>it was only drizzling</q><span class="st no">CONFLICT</span></div>
-      <div class="cmp-row"><span class="f">Why A braked</span><q>el agua me hizo patinar</q><q>braked suddenly for no reason</q><span class="st no">CONFLICT</span></div>
+<section id="how">
+  <div class="wrap how">
+    <div class="sticky">
+      <h2 class="reveal">From a voice note to an adjuster's map in minutes.</h2>
+      <p class="lede reveal" style="--d:.1s">Text, voice notes, photos and a pin, at any hour, in Spanish or English. No app to install, no call centre.</p>
     </div>
-    <div class="studies">
-      <div class="study reveal"><b>40.8 <small>vs</small> 31.8 mph</b><p>Speed witnesses estimated when the question said "smashed" instead of "contacted". So Claimline's questions never suggest a speed, a cause or a fault.</p><cite>Loftus and Palmer, 1974</cite></div>
-      <div class="study reveal" style="--d:.08s"><b>71% <small>vs</small> 0%</b><p>Witnesses who talked about the event reported details they never saw. So each driver reports in a separate chat and never sees the other's answers.</p><cite>Gabbert, Memon and Allan, 2003 (quoted second-hand)</cite></div>
-      <div class="study reveal" style="--d:.16s"><b>52% <small>vs</small> 4%</b><p>Customers likely to leave after a digital claim they rated poor or OK, against those who rated it highly. The report and the PDF arrive in the same chat, in minutes.</p><cite>J.D. Power, 2025 (US)</cite></div>
+    <div class="steps" id="steps">
+      <div class="rail"><b></b></div>
+      <div class="step"><div class="n"><i class="ph ph-first-aid"></i></div><h3>Safety first</h3><p>The first question is whether anyone is hurt. If someone is, the agent gives the emergency number and hands the case to a person.</p></div>
+      <div class="step"><div class="n"><i class="ph ph-microphone"></i></div><h3>Report it your way</h3><p>Voice notes go through Amazon Transcribe. Plates are asked for in writing, because speech recognition can mishear them.</p></div>
+      <div class="step"><div class="n"><i class="ph ph-quotes"></i></div><h3>Every fact with its evidence</h3><p>A Strands agent on Bedrock AgentCore asks one question at a time and saves each fact with the person's own words.</p></div>
+      <div class="step"><div class="n"><i class="ph ph-git-diff"></i></div><h3>Compare in code</h3><p>With two people, each fact is AGREED, ONLY_A, ONLY_B or CONFLICT. Claude only judges whether two free-text values mean the same thing.</p></div>
+      <div class="step"><div class="n"><i class="ph ph-check-square-offset"></i></div><h3>Approve in a WhatsApp Flow</h3><p>Each person reviews the draft in the chat. Two rejections without a correction hand the case to a person.</p></div>
+      <div class="step"><div class="n"><i class="ph ph-file-pdf"></i></div><h3>PDF and claims board</h3><p>The report is built in code as a PDF, stored in S3 and sent in the chat. The insurer sees the case on its map.</p></div>
     </div>
   </div>
 </section>
@@ -456,8 +519,8 @@ footer .src { margin: 0 0 10px; }
   <div class="wrap">
     <div class="nino-grid">
       <div>
-        <h2 class="reveal">El Niño is back, and it doesn't stop at one border.</h2>
-        <p class="lede reveal" style="--d:.1s">Warm Pacific water shifts rain around the world: floods in some places, drought and fire in others. Insurers that cover natural disasters get their claims in waves, from one region, in a few weeks.</p>
+        <h2 class="reveal">It also works when disaster strikes.</h2>
+        <p class="lede reveal" style="--d:.1s">The same number takes claims from one person: a flooded home, a storm-hit shop, lost crops. El Niño shifts rain around the world, and insurers that cover natural disasters get these claims in waves.</p>
         <div class="now-card reveal" style="--d:.15s"><span class="pulse"></span><div><b>2026-27: a strong El Niño</b><span>WMO says it is established, peaking late 2026, with impacts into 2027.</span></div></div>
       </div>
       <div class="reveal" style="--d:.15s">
@@ -494,24 +557,6 @@ footer .src { margin: 0 0 10px; }
         <img src="/assets/fields.webp" alt="Aerial view of farmland under floodwater" loading="lazy" width="1600" height="1067">
         <figcaption>Flooded farmland, northern Peru, March 2023. Photo: Ministerio de Defensa del Perú, CC BY 2.0</figcaption>
       </figure>
-    </div>
-  </div>
-</section>
-
-<section id="how">
-  <div class="wrap how">
-    <div class="sticky">
-      <h2 class="reveal">From a voice note to an adjuster's map in minutes.</h2>
-      <p class="lede reveal" style="--d:.1s">Text, voice notes, photos and a pin, at any hour, in Spanish or English. No app to install, no call centre.</p>
-    </div>
-    <div class="steps" id="steps">
-      <div class="rail"><b></b></div>
-      <div class="step"><div class="n"><i class="ph ph-first-aid"></i></div><h3>Safety first</h3><p>The first question is whether anyone is hurt. If someone is, the agent gives the emergency number and hands the case to a person.</p></div>
-      <div class="step"><div class="n"><i class="ph ph-microphone"></i></div><h3>Report it your way</h3><p>Voice notes go through Amazon Transcribe. Plates are asked for in writing, because speech recognition can mishear them.</p></div>
-      <div class="step"><div class="n"><i class="ph ph-quotes"></i></div><h3>Every fact with its evidence</h3><p>A Strands agent on Bedrock AgentCore asks one question at a time and saves each fact with the person's own words.</p></div>
-      <div class="step"><div class="n"><i class="ph ph-git-diff"></i></div><h3>Compare in code</h3><p>With two people, each fact is AGREED, ONLY_A, ONLY_B or CONFLICT. Claude only judges whether two free-text values mean the same thing.</p></div>
-      <div class="step"><div class="n"><i class="ph ph-check-square-offset"></i></div><h3>Approve in a WhatsApp Flow</h3><p>Each person reviews the draft in the chat. Two rejections without a correction hand the case to a person.</p></div>
-      <div class="step"><div class="n"><i class="ph ph-file-pdf"></i></div><h3>PDF and claims board</h3><p>The report is built in code as a PDF, stored in S3 and sent in the chat. The insurer sees the case on its map.</p></div>
     </div>
   </div>
 </section>
@@ -590,8 +635,8 @@ footer .src { margin: 0 0 10px; }
 <section class="final">
   <div class="photo" role="img" aria-label="The Piura river running high through the city, March 2017"></div>
   <div class="wrap">
-    <h2 class="reveal">Watch a flood claim and a crash in the rain, start to finish.</h2>
-    <p class="lede reveal" style="--d:.1s">Two phones and the claims board, running the real Claimline code. In the public demo the replies are scripted; on AWS, Claude answers.</p>
+    <h2 class="reveal">Watch two drivers turn two versions into one report.</h2>
+    <p class="lede reveal" style="--d:.1s">Two phones and the claims board running the real Claimline code, plus a flood claim from one person. In the public demo the replies are scripted; on AWS, Claude answers.</p>
     <div class="cta reveal" style="--d:.2s"><a class="btn primary" href="/login">Open the demo <i class="ph ph-arrow-right"></i></a></div>
   </div>
 </section>
@@ -604,7 +649,7 @@ footer .src { margin: 0 0 10px; }
     </div>
     <div>
       <p class="src">Photos: Ministerio de Defensa del Perú via Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a> (Ica 2017; Piura 2017; northern Peru 2023). Satellite image: NASA, public domain.</p>
-      <p class="src">The map uses <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> data. The three cases on it are the demo's cases, set in Piura, Peru. Crash photo: Wikimedia Commons, CC0.</p>
+      <p class="src">The map uses <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> data. The three cases on it are the demo's cases, set in Piura, Peru. Crash photos: Wikimedia Commons, CC0.</p>
     </div>
   </div>
 </footer>
@@ -654,59 +699,53 @@ footer .src { margin: 0 0 10px; }
   const track = document.getElementById("track");
   track.insertAdjacentHTML("beforeend", track.innerHTML.replaceAll('class="svc"', 'class="svc" aria-hidden="true"'));
 
-  // Hero phone: the demo's crash and flood claims, in turn, in the demo's own words
-  const chat = document.getElementById("chat");
-  const CRASH = [
-    ["out", "JOIN K7Q2MX"],
-    ["in", "Hi, I'm Claimline, an AI assistant. You joined the joint report the other driver started. First: is anyone hurt?"],
-    ["out", "No, nobody is hurt."],
-    ["in", "Good. Where and when did it happen, and what happened?"],
-    ["out", '<div class="voice"><i class="ph-fill ph-play"></i><span class="wave"></span><span>0:19</span></div><small>"Around eight twenty PM. It was only drizzling. The car in front braked suddenly and I hit its rear bumper."</small>'],
-    ["in", "The other driver remembers heavy rain and a flooded road. How was the weather where it happened?"],
-    ["out", "I'm sure, it was just a light drizzle, my wipers were on slow."],
-    ["in", "Thanks, it stays in the report in your words. What's the other car's plate? Please type it."],
-    ["out", "ABC-123"],
-    ["in", 'The draft joint report is ready.<div class="btns"><span class="tap">Review report</span></div>'],
-    ["in", '<div class="doc"><i class="ph-fill ph-file-pdf"></i><div>joint-report.pdf<small>2 pages · PDF</small></div></div>'],
-  ];
-  const FLOOD = [
-    ["out", "Hi, my shop got flooded last night in the El Niño rain."],
-    ["in", "Hi, I'm Claimline, your insurer's AI assistant. I'm sorry about your shop. First: is anyone hurt?"],
-    ["out", "No, nobody is hurt."],
-    ["in", 'Thanks. Is anyone else involved, like another driver, or is it only your own loss?<div class="btns"><span>With someone else</span><span class="tap">Just me</span></div>'],
-    ["out", "Just me"],
-    ["in", "Understood. Please share your location or type the address."],
-    ["out", '<div class="pin"><i class="ph-fill ph-map-pin"></i><div>Shop location<small>Location</small></div></div>'],
-    ["out", '<div class="voice"><i class="ph-fill ph-play"></i><span class="wave"></span><span>0:14</span></div><small>"Around eleven PM. The water came in, about forty centimeters high."</small>'],
-    ["in", "Thanks. What was damaged?"],
-    ["out", "The water ruined the counter, the fridge and the stock of rice and sugar sacks."],
-    ["in", 'Your report is ready to review.<div class="btns"><span class="tap">Review report</span></div>'],
-    ["in", '<div class="doc"><i class="ph-fill ph-file-pdf"></i><div>loss-report.pdf<small>1 page · PDF</small></div></div>'],
+  // Hero phones: the demo's joint crash report, each driver in their own chat and language
+  const chats = { A: document.getElementById("chatA"), B: document.getElementById("chatB") };
+  const voice = (len, text) => `<div class="voice"><i class="ph-fill ph-play"></i><span class="wave"></span><span>${len}</span></div><small>"${text}"</small>`;
+  const JOINT = [
+    ["A", "out", "Hola, me chocaron por detrás en plena lluvia."],
+    ["A", "in", "Hola, soy Claimline, el asistente de IA de su aseguradora. Antes que nada: ¿hay alguien herido?"],
+    ["A", "out", "No, nadie está herido."],
+    ["A", "in", "Muestre este código al otro conductor: <b>JOIN K7Q2MX</b>. Mientras tanto, ¿dónde y cuándo fue, y qué pasó?"],
+    ["B", "out", "JOIN K7Q2MX"],
+    ["B", "in", "Hi, I'm Claimline, an AI assistant. You joined the joint report the other driver started. First: is anyone hurt?"],
+    ["A", "out", voice("0:16", "A las ocho y veinte. Llovía muy fuerte, el agua me hizo patinar y frené.")],
+    ["B", "out", voice("0:12", "No. Around eight twenty PM, only drizzling. The car in front braked for no reason.")],
+    ["B", "in", "The other driver remembers heavy rain and a flooded road. How was the weather where it happened?"],
+    ["A", "in", "El otro conductor recuerda solo una llovizna. ¿Cómo estaba el clima?"],
+    ["B", "out", "Just a light drizzle, my wipers were on slow."],
+    ["A", "out", "Llovía a cántaros, el agua llegaba a media llanta."],
+    ["A", "in", 'El borrador del informe conjunto está listo.<div class="btns"><span class="tap">Revisar informe</span></div>'],
+    ["B", "in", 'The draft joint report is ready.<div class="btns"><span class="tap">Review report</span></div>'],
+    ["A", "out", '<div class="flow"><i class="ph-fill ph-check-circle"></i>Apruebo: es lo que dije</div>'],
+    ["B", "out", '<div class="flow"><i class="ph-fill ph-check-circle"></i>I approve: it\'s what I said</div>'],
+    ["A", "in", '<div class="doc"><i class="ph-fill ph-file-pdf"></i><div>informe-conjunto.pdf<small>2 páginas · PDF</small></div></div>'],
+    ["B", "in", '<div class="doc"><i class="ph-fill ph-file-pdf"></i><div>joint-report.pdf<small>2 pages · PDF</small></div></div>'],
   ];
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const add = (who, html) => {
-    const m = document.createElement("div");
-    m.className = "msg " + (who === "out" ? "out" : "in-msg");
+  const add = (who, dir, html) => {
+    const chat = chats[who], m = document.createElement("div");
+    m.className = "msg " + (dir === "out" ? "out" : "in-msg");
     m.innerHTML = html;
     chat.appendChild(m);
-    while (chat.children.length > 9) chat.firstElementChild.remove();
+    while (chat.children.length > 8) chat.firstElementChild.remove();
   };
   async function play() {
-    for (let round = 0; ; round++) {
-      chat.innerHTML = "";
-      for (const [who, html] of round % 2 ? FLOOD : CRASH) {
-        if (who === "in") {
+    for (;;) {
+      chats.A.innerHTML = chats.B.innerHTML = "";
+      for (const [who, dir, html] of JOINT) {
+        if (dir === "in") {
           const t = document.createElement("div");
           t.className = "typing"; t.innerHTML = "<b></b><b></b><b></b>";
-          chat.appendChild(t); await wait(1100); t.remove();
+          chats[who].appendChild(t); await wait(900); t.remove();
         }
-        add(who, html);
-        await wait(who === "in" ? 1900 : 1300);
+        add(who, dir, html);
+        await wait(dir === "in" ? 1700 : 1200);
       }
-      await wait(5000);
+      await wait(6000);
     }
   }
-  if (reduce) CRASH.slice(-6).forEach(([w, h]) => add(w, h)); else play();
+  if (reduce) JOINT.forEach(([w, d, h]) => add(w, d, h)); else play();
 
   // Insurer map: the three demo cases in Piura
   if (window.L) {
