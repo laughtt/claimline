@@ -67,7 +67,7 @@ nav .links a:hover { color: var(--text); }
   linear-gradient(0deg, var(--bg) 0%, rgba(11, 17, 19, 0) 30%); }
 @keyframes settle { to { transform: scale(1); } }
 .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 56px; align-items: center; padding-top: 96px; padding-bottom: 72px; width: 100%; }
-.hero h1 { font-size: clamp(44px, 5.6vw, 78px); line-height: 1.02; letter-spacing: -.045em; margin: 22px 0 0; max-width: 13ch; }
+.hero h1 { font-size: clamp(44px, 5.6vw, 78px); line-height: 1.02; letter-spacing: -.045em; margin: 22px 0 0; max-width: 14ch; }
 .hero h1 em { font-style: normal; color: var(--accent); }
 .hero .lede { color: #C3CED0; font-size: 20px; max-width: 40ch; }
 .hero .cta { display: flex; gap: 14px; margin-top: 38px; flex-wrap: wrap; }
@@ -173,17 +173,41 @@ nav .links a:hover { color: var(--text); }
 .gap figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 60px 24px 18px; font-size: 13px; color: rgba(226, 235, 237, .75); background: linear-gradient(0deg, rgba(11, 17, 19, .85), transparent); }
 
 /* Paths bento */
-.bento { margin-top: 64px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 18px; }
+.bento { margin-top: 64px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .cell { border-radius: var(--r); border: 1px solid var(--line); background: var(--bg2); padding: 36px; position: relative; overflow: hidden; }
 .cell h3 { font-size: 28px; line-height: 1.15; letter-spacing: -.03em; }
 .cell .tag { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--soft); margin-bottom: 18px; }
 .cell .tag i { color: var(--accent); font-size: 18px; }
 .cell p { color: var(--soft); margin: 12px 0 0; font-size: 16px; max-width: 46ch; }
-.cell.solo { grid-row: span 2; min-height: 640px; display: flex; flex-direction: column; justify-content: flex-end; isolation: isolate; border: 0; }
-.cell.solo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; transition: transform 1.4s var(--ease); }
-.cell.solo:hover img { transform: scale(1.03); }
-.cell.solo::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(11, 17, 19, .97) 12%, rgba(11, 17, 19, .55) 55%, rgba(11, 17, 19, .1)); }
-.cell.solo p { color: #C3CED0; }
+.cell.photo-cell { min-height: 640px; display: flex; flex-direction: column; justify-content: flex-end; isolation: isolate; border: 0; }
+.cell.photo-cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; transition: transform 1.4s var(--ease); }
+.cell.photo-cell:hover img { transform: scale(1.03); }
+.cell.photo-cell::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(11, 17, 19, .97) 12%, rgba(11, 17, 19, .55) 55%, rgba(11, 17, 19, .1)); }
+.cell.photo-cell p { color: #C3CED0; }
+
+/* Crash comparison and the studies behind it */
+.big-cmp { margin-top: 56px; font-size: 16.5px; border-radius: var(--r); border: 1px solid var(--line); background: var(--bg2); padding: 26px 32px 14px; }
+.big-cmp .cmp-row { grid-template-columns: 140px minmax(0, 1fr) minmax(0, 1fr) 100px; gap: 20px; padding: 16px 0; }
+.big-cmp .cmp-row.head { font-size: 13px; padding-bottom: 6px; }
+.big-cmp .st { font-size: 12.5px; }
+.studies { margin-top: 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; }
+.study b { display: block; font-size: clamp(30px, 3vw, 42px); font-weight: 600; letter-spacing: -.04em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.study b small { font-size: .5em; font-weight: 400; color: var(--dim); letter-spacing: 0; margin: 0 4px; }
+.study p { color: var(--soft); font-size: 15.5px; margin: 14px 0 0; }
+.study cite { display: block; margin-top: 10px; font-style: normal; font-size: 13px; color: var(--dim); }
+
+/* El Niño around the world */
+.now-card { margin-top: 36px; display: flex; gap: 16px; align-items: flex-start; padding: 20px 22px; border-radius: var(--r); border: 1px solid rgba(240, 137, 74, .35); background: rgba(240, 137, 74, .06); max-width: 520px; }
+.now-card b { display: block; font-weight: 600; }
+.now-card span:not(.pulse) { color: var(--soft); font-size: 15px; }
+.pulse { flex: none; position: relative; width: 12px; height: 12px; margin-top: 6px; border-radius: 50%; background: var(--accent); }
+.pulse::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid var(--accent); animation: ping 2.4s var(--ease) infinite; }
+.world { margin-top: 80px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 48px; row-gap: 44px; }
+.region { border-top: 1px solid var(--line2); padding-top: 20px; }
+.region .yr { font-size: 12.5px; color: var(--soft); }
+.region .big { font-size: 34px; font-weight: 600; letter-spacing: -.035em; margin-top: 8px; }
+.region p { color: var(--soft); font-size: 15px; margin: 8px 0 0; }
+
 .kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
 .kinds span { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line2); background: rgba(11, 17, 19, .5); font-size: 14px; }
 .kinds span i { font-size: 16px; color: var(--soft); }
@@ -280,6 +304,7 @@ footer .src { margin: 0 0 10px; }
   .hero .wrap { grid-template-columns: 1fr; gap: 48px; padding-top: 120px; }
   .stage { justify-self: start; }
   .nino-grid, .how, .gap, footer .wrap { grid-template-columns: 1fr; }
+  .world, .studies { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sat { aspect-ratio: 16 / 10; max-width: 560px; }
   .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 40px; }
   .timeline::before, .timeline .fill { display: none; }
@@ -293,7 +318,7 @@ footer .src { margin: 0 0 10px; }
   .hero .lede { font-size: 18px; }
   .credit { position: static; padding: 0 20px 28px; }
   .hero .wrap { padding-bottom: 32px; }
-  .cell.solo::before { background: linear-gradient(0deg, rgba(11, 17, 19, .98) 30%, rgba(11, 17, 19, .7) 62%, rgba(11, 17, 19, .2)); }
+  .cell.photo-cell::before { background: linear-gradient(0deg, rgba(11, 17, 19, .98) 30%, rgba(11, 17, 19, .7) 62%, rgba(11, 17, 19, .2)); }
   .fair { grid-template-columns: 1fr; gap: 16px; }
   .stage { justify-self: center; --pw: min(300px, 82vw); }
   .phone { transform: none; }
@@ -303,7 +328,10 @@ footer .src { margin: 0 0 10px; }
   .gap .row { grid-template-columns: 1fr; gap: 20px; }
   .bento { grid-template-columns: 1fr; }
   .cell { padding: 26px; }
-  .cell.solo { grid-row: auto; min-height: 560px; }
+  .cell.photo-cell { min-height: 560px; }
+  .big-cmp { padding: 18px 18px 8px; font-size: 15px; }
+  .big-cmp .cmp-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .studies, .world { grid-template-columns: 1fr; gap: 36px; }
   .cmp-row { grid-template-columns: 1fr 1fr; }
   .cmp-row .f { grid-column: 1 / -1; color: var(--dim); font-size: 12.5px; }
   .cmp-row.head { display: none; }
@@ -330,8 +358,8 @@ footer .src { margin: 0 0 10px; }
 <nav id="nav"><div class="wrap">
   <a class="logo" href="#top"><span class="mark"><i class="ph-fill ph-drop"></i></span>Claimline</a>
   <div class="links">
+    <a href="#crash">Crashes</a>
     <a href="#nino">El Niño</a>
-    <a href="#paths">Two paths</a>
     <a href="#how">How it works</a>
     <a href="#board">For insurers</a>
     <a href="#aws">AWS</a>
@@ -344,15 +372,15 @@ footer .src { margin: 0 0 10px; }
   <div class="wrap">
     <div>
       <div class="eyebrow in">AWS CDS Agentic AI Hackathon 2026</div>
-      <h1 class="in" style="--d:.1s">When the water comes in, the claim starts on <em>WhatsApp.</em></h1>
-      <p class="lede in" style="--d:.2s">An AI agent takes disaster and crash claims by voice note, photo and pin. It never decides who is at fault.</p>
+      <h1 class="in" style="--d:.1s">After a crash or a flood, the claim starts on <em>WhatsApp.</em></h1>
+      <p class="lede in" style="--d:.2s">An AI agent takes car crash and natural-disaster claims by voice note, photo and pin. It never decides who is at fault.</p>
       <div class="cta in" style="--d:.3s">
         <a class="btn primary" href="/login">Open the demo <i class="ph ph-arrow-right"></i></a>
         <a class="btn ghost" href="#how">How it works</a>
       </div>
     </div>
     <div class="stage in" style="--d:.35s">
-      <div class="phone" aria-label="A flood claim on WhatsApp, as it runs in the demo">
+      <div class="phone" aria-label="A crash claim and a flood claim on WhatsApp, as they run in the demo">
         <span class="btn-side vol-up"></span><span class="btn-side vol-down"></span><span class="btn-side action"></span><span class="btn-side power"></span>
         <div class="screen">
           <div class="island"></div>
@@ -369,27 +397,83 @@ footer .src { margin: 0 0 10px; }
   <div class="credit">Ica, Peru, January 2017. Photo: Ministerio de Defensa del Perú, CC BY 2.0</div>
 </header>
 
+<section id="paths">
+  <div class="wrap">
+    <div class="eyebrow reveal">One number, two paths</div>
+    <h2 class="reveal" style="--d:.05s;margin-top:18px">Crashes and disasters, on the same number.</h2>
+    <p class="lede reveal" style="--d:.1s">After asking whether anyone is hurt, Claimline sends two WhatsApp buttons. The choice is saved in code, so no step gets skipped.</p>
+    <div class="bento">
+      <article class="cell photo-cell reveal">
+        <img src="/assets/crash.webp" alt="Two cars after a rear-end collision on a city street, with a traffic officer" loading="lazy" width="1800" height="1200">
+        <div class="tag"><i class="ph ph-users"></i>With someone else</div>
+        <h3>Two drivers, two phones, one fair report.</h3>
+        <p>Each driver reports from their own chat, in their own language. The versions are compared in code, and both approve the joint report.</p>
+        <div class="kinds">
+          <span class="live"><i class="ph ph-car-profile"></i>Car crash</span>
+          <span><i class="ph ph-motorcycle"></i>Motorbike and car</span>
+          <span><i class="ph ph-drop-half-bottom"></i>Leak from the flat above</span>
+          <span><i class="ph ph-package"></i>Damaged delivery</span>
+        </div>
+      </article>
+      <article class="cell photo-cell reveal" style="--d:.1s">
+        <img src="/assets/street.webp" alt="Workers wading through a flooded street after heavy rain" loading="lazy" width="1600" height="1074">
+        <div class="tag"><i class="ph ph-user"></i>Just me</div>
+        <h3>A loss of your own, reported from where it happened.</h3>
+        <p>A pin, when it happened, how high the water got, what was damaged and photos. One approval closes the case, and the PDF arrives in the chat.</p>
+        <div class="kinds">
+          <span class="live"><i class="ph ph-house-line"></i>Home flooded</span>
+          <span class="live"><i class="ph ph-storefront"></i>Shop flooded</span>
+          <span><i class="ph ph-wind"></i>Storm</span>
+          <span><i class="ph ph-mountains"></i>Landslide</span>
+          <span><i class="ph ph-plant"></i>Crops lost</span>
+        </div>
+      </article>
+    </div>
+    <p class="src reveal" style="margin-top:20px">Highlighted: built and in the demo today. The others use the same two paths and need their own questions and report fields. Crash photo: Wikimedia Commons, CC0. Flood photo: Ministerio de Defensa del Perú, CC BY 2.0.</p>
+  </div>
+</section>
+
+<section id="crash">
+  <div class="wrap">
+    <h2 class="reveal" style="max-width:17ch">Two versions of one crash. The AI never picks a side.</h2>
+    <p class="lede reveal" style="--d:.1s">Plain code labels each fact AGREED, ONLY_A, ONLY_B or CONFLICT. The agent asks once about each conflict, in neutral words, and the dispute stays in the report in each driver's own words.</p>
+    <div class="cmp big-cmp reveal" style="--d:.15s" aria-label="Comparison of two drivers' accounts of a crash in the rain">
+      <div class="cmp-row head"><span>Fact</span><span>Driver A, wrote in Spanish</span><span>Driver B, wrote in English</span><span></span></div>
+      <div class="cmp-row"><span class="f">Time</span><q>a las ocho y veinte</q><q>around eight twenty PM</q><span class="st ok">AGREED</span></div>
+      <div class="cmp-row"><span class="f">Impact</span><q>me golpeó en el parachoques trasero</q><q>I hit its rear bumper</q><span class="st ok">AGREED</span></div>
+      <div class="cmp-row"><span class="f">Weather</span><q>llovía muy fuerte, la pista inundada</q><q>it was only drizzling</q><span class="st no">CONFLICT</span></div>
+      <div class="cmp-row"><span class="f">Why A braked</span><q>el agua me hizo patinar</q><q>braked suddenly for no reason</q><span class="st no">CONFLICT</span></div>
+    </div>
+    <div class="studies">
+      <div class="study reveal"><b>40.8 <small>vs</small> 31.8 mph</b><p>Speed witnesses estimated when the question said "smashed" instead of "contacted". So Claimline's questions never suggest a speed, a cause or a fault.</p><cite>Loftus and Palmer, 1974</cite></div>
+      <div class="study reveal" style="--d:.08s"><b>71% <small>vs</small> 0%</b><p>Witnesses who talked about the event reported details they never saw. So each driver reports in a separate chat and never sees the other's answers.</p><cite>Gabbert, Memon and Allan, 2003 (quoted second-hand)</cite></div>
+      <div class="study reveal" style="--d:.16s"><b>52% <small>vs</small> 4%</b><p>Customers likely to leave after a digital claim they rated poor or OK, against those who rated it highly. The report and the PDF arrive in the same chat, in minutes.</p><cite>J.D. Power, 2025 (US)</cite></div>
+    </div>
+  </div>
+</section>
+
 <section id="nino">
   <div class="wrap">
     <div class="nino-grid">
       <div>
-        <h2 class="reveal">El Niño keeps coming back. So do the claims.</h2>
-        <p class="lede reveal" style="--d:.1s">Warm Pacific water brings torrential rain to Peru's northern coast. Rivers overflow, huaicos of mud come down the ravines, and thousands of homes, shops and cars are damaged in the same few weeks.</p>
+        <h2 class="reveal">El Niño is back, and it doesn't stop at one border.</h2>
+        <p class="lede reveal" style="--d:.1s">Warm Pacific water shifts rain around the world: floods in some places, drought and fire in others. Insurers that cover natural disasters get their claims in waves, from one region, in a few weeks.</p>
+        <div class="now-card reveal" style="--d:.15s"><span class="pulse"></span><div><b>2026-27: a strong El Niño</b><span>WMO says it is established, peaking late 2026, with impacts into 2027.</span></div></div>
       </div>
       <div class="reveal" style="--d:.15s">
-        <div class="sat"><img src="/assets/yaku.webp" alt="Satellite view of Cyclone Yaku off the coast of Peru" loading="lazy" width="1400" height="1620"></div>
-        <div class="sat-cap">Cyclone Yaku off Peru, 13 March 2023. NASA Terra and Aqua, public domain.</div>
+        <div class="sat"><img src="/assets/yaku.webp" alt="Satellite view of Cyclone Yaku over the eastern Pacific" loading="lazy" width="1400" height="1620"></div>
+        <div class="sat-cap">Cyclone Yaku over the eastern Pacific, 13 March 2023. NASA, public domain.</div>
       </div>
     </div>
-    <div class="timeline reveal" id="timeline">
-      <span class="fill"></span>
-      <div class="t"><div class="dot"></div><div class="yr mono">1982-83</div><div class="big">≈US$3.3B</div><p>in losses, one of the century's strongest El Niños</p></div>
-      <div class="t"><div class="dot"></div><div class="yr mono">1997-98</div><div class="big">≈US$3.5B</div><p>in losses, about 6.2% of Peru's GDP</p></div>
-      <div class="t"><div class="dot"></div><div class="yr mono">2017 Niño Costero</div><div class="big"><span data-count="1.6" data-dec="1">1.6</span>M</div><p>people affected, up to US$3.1B in losses</p></div>
-      <div class="t"><div class="dot"></div><div class="yr mono">2023 Cyclone Yaku</div><div class="big" data-count="27843">27,843</div><p>homes affected</p></div>
-      <div class="t now"><div class="dot"></div><div class="yr mono">2026-27 Now</div><div class="big">Very strong</div><p>WMO: El Niño is established, peaking late 2026, impacts into 2027</p></div>
+    <div class="world">
+      <div class="region reveal"><div class="yr mono">South America, Pacific coast</div><div class="big">Floods</div><p>Torrential rain, overflowing rivers and mudslides. In Peru, the 2017 coastal El Niño affected about 1.6 million people.</p></div>
+      <div class="region reveal" style="--d:.06s"><div class="yr mono">Southern Brazil, Argentina, Uruguay</div><div class="big">Floods</div><p>Heavy rain and floods, such as Rio Grande do Sul in 2024.</p></div>
+      <div class="region reveal" style="--d:.12s"><div class="yr mono">Southern United States</div><div class="big">Storms</div><p>Wetter, stormier winters, from California to the Gulf Coast.</p></div>
+      <div class="region reveal"><div class="yr mono">East Africa</div><div class="big">Floods</div><p>Exceptionally intense rainy seasons in Kenya, Somalia and the Horn of Africa in 2023-24.</p></div>
+      <div class="region reveal" style="--d:.06s"><div class="yr mono">Central America, southern Africa</div><div class="big">Drought</div><p>Lost harvests in the Dry Corridor. In 2024 Zambia, Malawi and Zimbabwe declared a state of disaster.</p></div>
+      <div class="region reveal" style="--d:.12s"><div class="yr mono">Indonesia, Philippines, Australia</div><div class="big">Fire risk</div><p>Dry, hot conditions and a higher bushfire risk.</p></div>
     </div>
-    <p class="src reveal" style="margin-top:48px">Sources: Andina and Infomercado (1982-83, 1997-98); IGP and Infomercado citing INDECI (2017); COEN via Gestión (2023); WMO via AFP, September 2026. Loss estimates vary by method.</p>
+    <p class="src reveal" style="margin-top:44px">Typical El Niño patterns; each event differs. Sources: WMO; NOAA; WMO via AFP, September 2026; IGP (Peru 2017); 2023-24 event reports. Claimline speaks Spanish and English today.</p>
   </div>
 </section>
 
@@ -397,63 +481,19 @@ footer .src { margin: 0 0 10px; }
   <div class="wrap">
     <div class="gap reveal">
       <div class="copy">
-        <div class="huge"><span data-count="82">82</span>%</div>
-        <p class="huge-cap">of disaster losses went uninsured across 10 Latin American countries.</p>
+        <div class="huge"><span data-count="51">51</span>%</div>
+        <p class="huge-cap">of the world's natural-catastrophe losses in 2025 were not insured.</p>
         <div class="row">
-          <div><b>≈2%</b><span>of GDP: insurance premiums in Peru</span></div>
-          <div><b>49%</b><span>of disaster losses insured worldwide in 2025</span></div>
+          <div><b>92%</b><span>of 2025 insured losses came from storms, floods and wildfires</span></div>
+          <div><b>82%</b><span>of disaster losses uninsured across 10 Latin American countries</span></div>
           <div><b>1-2%</b><span>of homes had flood cover where Hurricane Helene hit hardest</span></div>
         </div>
-        <p class="src" style="margin-top:28px">Many small claims from one region in a few days: a load no call centre absorbs. Sources: Swiss Re sigma 1/2026; Swiss Re 10-country study via Monitor Mercantil; AM Best (2026); AP and NBC analyses of NFIP data.</p>
+        <p class="src" style="margin-top:28px">US$220B in losses, US$107B insured. Many small claims from one region in a few days: a load no call centre absorbs. Sources: Swiss Re sigma 1/2026; Swiss Re 10-country study via Monitor Mercantil; AP analysis of NFIP data.</p>
       </div>
       <figure>
-        <img src="/assets/fields.webp" alt="Aerial view of farmland under floodwater on Peru's northern coast" loading="lazy" width="1600" height="1067">
+        <img src="/assets/fields.webp" alt="Aerial view of farmland under floodwater" loading="lazy" width="1600" height="1067">
         <figcaption>Flooded farmland, northern Peru, March 2023. Photo: Ministerio de Defensa del Perú, CC BY 2.0</figcaption>
       </figure>
-    </div>
-  </div>
-</section>
-
-<section id="paths">
-  <div class="wrap">
-    <div class="eyebrow reveal">One number, two paths</div>
-    <h2 class="reveal" style="--d:.05s;margin-top:18px">Every claim has one of two shapes.</h2>
-    <p class="lede reveal" style="--d:.1s">After asking whether anyone is hurt, Claimline sends two WhatsApp buttons. The choice is saved in code, so no step gets skipped.</p>
-    <div class="bento">
-      <article class="cell solo reveal">
-        <img src="/assets/street.webp" alt="Workers wading through a flooded street on Peru's northern coast" loading="lazy" width="1600" height="1074">
-        <div class="tag"><i class="ph ph-user"></i>Just me</div>
-        <h3>A loss of your own, reported from where it happened.</h3>
-        <p>A location pin, when it happened, how high the water got, what was damaged and photos. One approval closes the case, and the PDF arrives in the chat.</p>
-        <div class="kinds">
-          <span class="live"><i class="ph ph-house-line"></i>Home flooded</span>
-          <span class="live"><i class="ph ph-storefront"></i>Shop flooded</span>
-          <span><i class="ph ph-mountains"></i>Huaico</span>
-          <span><i class="ph ph-wind"></i>Storm damage</span>
-          <span><i class="ph ph-plant"></i>Crops lost</span>
-        </div>
-      </article>
-      <article class="cell reveal" style="--d:.1s">
-        <div class="tag"><i class="ph ph-users"></i>With someone else</div>
-        <h3>Two drivers, two phones, one fair report.</h3>
-        <p>Each reports in their own chat and language. Plain code compares the versions; the agent asks only about what doesn't match.</p>
-        <div class="cmp" aria-label="Comparison of two drivers' accounts">
-          <div class="cmp-row head"><span>Fact</span><span>Driver A, in Spanish</span><span>Driver B, in English</span><span></span></div>
-          <div class="cmp-row"><span class="f">Place</span><q>Sánchez Cerro con Grau</q><q>Sanchez Cerro and Grau</q><span class="st ok">AGREED</span></div>
-          <div class="cmp-row"><span class="f">Time</span><q>a las ocho y veinte</q><q>around eight twenty PM</q><span class="st ok">AGREED</span></div>
-          <div class="cmp-row"><span class="f">Weather</span><q>llovía muy fuerte</q><q>it was only drizzling</q><span class="st no">CONFLICT</span></div>
-        </div>
-      </article>
-      <article class="cell reveal" style="--d:.2s">
-        <div class="fair">
-          <div class="ic"><i class="ph ph-scales"></i></div>
-          <div>
-            <h3>The AI never decides fault.</h3>
-            <p>Questions stay neutral, and disputes stay in the report in each person's own words. Approving means "this is what I said", not "I accept the other version".</p>
-            <cite>Rule from Loftus and Palmer (1974): one loaded word changes what witnesses remember.</cite>
-          </div>
-        </div>
-      </article>
     </div>
   </div>
 </section>
@@ -478,12 +518,12 @@ footer .src { margin: 0 0 10px; }
 
 <section id="board">
   <div class="map-wrap">
-    <div id="map" role="img" aria-label="Map of Piura with three demo claims"></div>
+    <div id="map" role="img" aria-label="Map with the three demo claims"></div>
     <div class="map-copy"><div class="wrap"><div class="inner">
-      <h2 class="reveal">When the rain hits Piura, adjusters see where.</h2>
+      <h2 class="reveal">When a storm hits a city, adjusters see where.</h2>
       <p class="lede reveal" style="--d:.1s">Every case lands on a live map with its status, conflicts, the whole conversation, each fact with its evidence, and the PDF.</p>
       <div class="counts reveal" style="--d:.2s">
-        <div><b data-count="3">3</b><span>cases in Piura</span></div>
+        <div><b data-count="3">3</b><span>demo cases</span></div>
         <div><b data-count="2">2</b><span>approved, PDF sent</span></div>
         <div class="c-no"><b data-count="2">2</b><span>conflicts to review</span></div>
       </div>
@@ -496,14 +536,14 @@ footer .src { margin: 0 0 10px; }
     <h2 class="reveal">One WhatsApp number for every line of insurance.</h2>
     <p class="lede reveal" style="--d:.1s">Claimline is the intake: it hands each insurer a complete, evidence-backed case, and deploys into the insurer's own AWS account.</p>
     <div class="lines">
-      <div class="line reveal"><i class="ph ph-waves"></i><div><h3>Catastrophe surge</h3><p>One number for everyone. Serverless, so it scales when thousands report at once, with cases clustered on a map.</p></div></div>
-      <div class="line reveal" style="--d:.08s"><i class="ph ph-house-line"></i><div><h3>Home and property</h3><p>Floods, huaicos, storms and fire, with a pin, the water level, damaged items and photos.</p></div></div>
-      <div class="line reveal"><i class="ph ph-plant"></i><div><h3>Agriculture</h3><p>Peru's catastrophic crop insurance (SAC) pays S/800 per hectare. Field reports with a pin and photos fit the "Just me" path.</p></div></div>
-      <div class="line reveal" style="--d:.08s"><i class="ph ph-car-profile"></i><div><h3>Auto and SOAT</h3><p>A neutral joint report from both drivers, plates typed and checked, conflicts flagged, a PDF for each.</p></div></div>
+      <div class="line reveal"><i class="ph ph-car-profile"></i><div><h3>Auto and motor liability</h3><p>A neutral joint report from both drivers, plates typed and checked, conflicts flagged, a PDF for each.</p></div></div>
+      <div class="line reveal" style="--d:.08s"><i class="ph ph-waves"></i><div><h3>Natural catastrophe</h3><p>One number for everyone. Serverless, so it scales when thousands report at once, with cases clustered on a map.</p></div></div>
+      <div class="line reveal"><i class="ph ph-house-line"></i><div><h3>Home and property</h3><p>Floods, landslides, storms and fire, with a pin, the water level, damaged items and photos.</p></div></div>
+      <div class="line reveal" style="--d:.08s"><i class="ph ph-plant"></i><div><h3>Agriculture</h3><p>Crop and livestock losses from floods or drought, reported from the field with a pin and photos.</p></div></div>
       <div class="line reveal"><i class="ph ph-storefront"></i><div><h3>SMEs and shops</h3><p>Owners report stock and equipment losses by voice, without stopping work.</p></div></div>
       <div class="line reveal" style="--d:.08s"><i class="ph ph-handshake"></i><div><h3>Microinsurance and brokers</h3><p>A low-cost channel for low-premium policies, in the chat people already use.</p></div></div>
     </div>
-    <p class="src limits reveal">Claimline doesn't check coverage, estimate damage, score fraud or pay; it feeds those steps. SAC figures: Midagri via El Peruano and Agraria.pe.</p>
+    <p class="src limits reveal">Claimline doesn't check coverage, estimate damage, score fraud or pay; it feeds those steps.</p>
   </div>
 </section>
 
@@ -563,8 +603,8 @@ footer .src { margin: 0 0 10px; }
       <p class="src" style="margin-top:14px">AWS CDS Agentic AI Partner Hackathon, October 2026.</p>
     </div>
     <div>
-      <p class="src">Photos: Ministerio de Defensa del Perú via Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a> (Ica 2017; Piura 2017; northern coast 2023). Satellite image: NASA, public domain.</p>
-      <p class="src">The map uses <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> data. The three cases on it are the demo's cases.</p>
+      <p class="src">Photos: Ministerio de Defensa del Perú via Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a> (Ica 2017; Piura 2017; northern Peru 2023). Satellite image: NASA, public domain.</p>
+      <p class="src">The map uses <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> data. The three cases on it are the demo's cases, set in Piura, Peru. Crash photo: Wikimedia Commons, CC0.</p>
     </div>
   </div>
 </footer>
@@ -614,19 +654,32 @@ footer .src { margin: 0 0 10px; }
   const track = document.getElementById("track");
   track.insertAdjacentHTML("beforeend", track.innerHTML.replaceAll('class="svc"', 'class="svc" aria-hidden="true"'));
 
-  // Hero phone: the demo's "Just me" flood claim, in the demo's own words
+  // Hero phone: the demo's crash and flood claims, in turn, in the demo's own words
   const chat = document.getElementById("chat");
-  const SCRIPT = [
+  const CRASH = [
+    ["out", "JOIN K7Q2MX"],
+    ["in", "Hi, I'm Claimline, an AI assistant. You joined the joint report the other driver started. First: is anyone hurt?"],
+    ["out", "No, nobody is hurt."],
+    ["in", "Good. Where and when did it happen, and what happened?"],
+    ["out", '<div class="voice"><i class="ph-fill ph-play"></i><span class="wave"></span><span>0:19</span></div><small>"Around eight twenty PM. It was only drizzling. The car in front braked suddenly and I hit its rear bumper."</small>'],
+    ["in", "The other driver remembers heavy rain and a flooded road. How was the weather where it happened?"],
+    ["out", "I'm sure, it was just a light drizzle, my wipers were on slow."],
+    ["in", "Thanks, it stays in the report in your words. What's the other car's plate? Please type it."],
+    ["out", "ABC-123"],
+    ["in", 'The draft joint report is ready.<div class="btns"><span class="tap">Review report</span></div>'],
+    ["in", '<div class="doc"><i class="ph-fill ph-file-pdf"></i><div>joint-report.pdf<small>2 pages · PDF</small></div></div>'],
+  ];
+  const FLOOD = [
     ["out", "Hi, my shop got flooded last night in the El Niño rain."],
     ["in", "Hi, I'm Claimline, your insurer's AI assistant. I'm sorry about your shop. First: is anyone hurt?"],
     ["out", "No, nobody is hurt."],
     ["in", 'Thanks. Is anyone else involved, like another driver, or is it only your own loss?<div class="btns"><span>With someone else</span><span class="tap">Just me</span></div>'],
     ["out", "Just me"],
     ["in", "Understood. Please share your location or type the address."],
-    ["out", '<div class="pin"><i class="ph-fill ph-map-pin"></i><div>Jr. Comercio, Catacaos<small>Location</small></div></div>'],
+    ["out", '<div class="pin"><i class="ph-fill ph-map-pin"></i><div>Shop location<small>Location</small></div></div>'],
     ["out", '<div class="voice"><i class="ph-fill ph-play"></i><span class="wave"></span><span>0:14</span></div><small>"Around eleven PM. The water came in, about forty centimeters high."</small>'],
     ["in", "Thanks. What was damaged?"],
-    ["out", "It's my shop. The water ruined the counter, the fridge and the stock of rice and sugar sacks."],
+    ["out", "The water ruined the counter, the fridge and the stock of rice and sugar sacks."],
     ["in", 'Your report is ready to review.<div class="btns"><span class="tap">Review report</span></div>'],
     ["in", '<div class="doc"><i class="ph-fill ph-file-pdf"></i><div>loss-report.pdf<small>1 page · PDF</small></div></div>'],
   ];
@@ -639,9 +692,9 @@ footer .src { margin: 0 0 10px; }
     while (chat.children.length > 9) chat.firstElementChild.remove();
   };
   async function play() {
-    for (;;) {
+    for (let round = 0; ; round++) {
       chat.innerHTML = "";
-      for (const [who, html] of SCRIPT) {
+      for (const [who, html] of round % 2 ? FLOOD : CRASH) {
         if (who === "in") {
           const t = document.createElement("div");
           t.className = "typing"; t.innerHTML = "<b></b><b></b><b></b>";
@@ -653,7 +706,7 @@ footer .src { margin: 0 0 10px; }
       await wait(5000);
     }
   }
-  if (reduce) SCRIPT.slice(-6).forEach(([w, h]) => add(w, h)); else play();
+  if (reduce) CRASH.slice(-6).forEach(([w, h]) => add(w, h)); else play();
 
   // Insurer map: the three demo cases in Piura
   if (window.L) {
